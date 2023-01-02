@@ -5,9 +5,27 @@
     <meta charset="utf-8" />
     <title>Voxel Game</title>
     <script type="module" src="../src/index.ts"></script>
+
+    <style>
+        #debug {
+            position: fixed;
+            right: 1em;
+            top: 1em;
+            z-index: 50;
+            color: white;
+            background-color: #0f0f0f;
+            border-radius: 10px;
+            padding: 1em;
+            font-family: monospace;
+        }
+    </style>
 </head>
 
 <body>
+    <div id="debug">
+        <p>Camera Position: </p>
+        <p id="debug-camera-position"></p>
+    </div>
 </body>
 
 </html>

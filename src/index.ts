@@ -32,14 +32,6 @@ const cameraCommand = regl({
 
 const world = new World(regl);
 
-const noise = createNoise4D();
-
-
-const sampleNoise = (ogPos : vec4) => {
-    const pos = vec4.create();
-    vec4.scale(pos, ogPos, 1 / NOISE_SCALE);
-    return noise(...(pos as [number, number, number, number])) * 0.5 + 0.5;
-}
 
 const NOISE_SCALE = 100;
 
@@ -49,16 +41,16 @@ const voxSample : VoxelSampleFunction = ([x, y, z]) => {
     const floorHeight = (noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5) * CHUNK_SIZE + 2 * CHUNK_SIZE;
     
     return [
-        (x / (CHUNK_SIZE * 32)) * 255, 
+        (x / (CHUNK_SIZE * 8)) * 255, 
         (y / (CHUNK_SIZE * 3)) * 255, 
-        (z / (CHUNK_SIZE * 32)) * 255, 
+        (z / (CHUNK_SIZE * 8)) * 255, 
         y < floorHeight ? 255 : 0
     ]
 }
 
 
 
-world.generateFromFunction([0, 0, 0], [32, 3, 32], voxSample)
+world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample)
 
 
 const CLEAR_COLOR: Vec4 = [0.1, 0.1, 0.1, 1];

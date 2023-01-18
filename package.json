@@ -5,8 +5,7 @@
   "source": "public/index.html",
   "scripts": {
     "start": "parcel",
-    "build": "parcel build",
-    "test": "node tests"
+    "build": "parcel build --public-url /vox"
   },
   "keywords": [],
   "author": "Tangerie <josh.cavill01@gmail.com> (https://github.com/Tangerie)",

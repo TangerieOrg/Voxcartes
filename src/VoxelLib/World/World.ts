@@ -5,10 +5,11 @@ import { CHUNK_SIZE } from "./contants";
 import { createEmptyChunk, positionToChunkPosition, positionToIndex, positionToStartIndexInChunk } from "./GeoUtil";
 
 import { createShader } from "../Shader/ShaderUtil";
-import BasicShader from "../assets/BasicShader";
+import VoxelShader from "../assets/VoxelShader";
 import { CameraContext } from "../Camera/Camera";
 import { AsContext } from "../Shared/DataUtil";
 import { ChunkProps } from "./Chunk";
+import CubeDefinition from "../Shapes/Cube";
 
 export type ChunkIndex = number;
 export type ChunkData = Uint8Array;
@@ -20,29 +21,7 @@ export interface Chunk {
     isEmpty : boolean;
 }
 
-const basicShader = createShader(BasicShader.source.Fragment, BasicShader.source.Vertex);
-
-
-
-const cube = {
-    vertex: [
-        [-0.5, +0.5, +0.5], [+0.5, +0.5, +0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5], // positive z face.
-        [+0.5, +0.5, +0.5], [+0.5, +0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], // positive x face
-        [+0.5, +0.5, -0.5], [-0.5, +0.5, -0.5], [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], // negative z face
-        [-0.5, +0.5, -0.5], [-0.5, +0.5, +0.5], [-0.5, -0.5, +0.5], [-0.5, -0.5, -0.5], // negative x face.
-        [-0.5, +0.5, -0.5], [+0.5, +0.5, -0.5], [+0.5, +0.5, +0.5], [-0.5, +0.5, +0.5], // top face
-        [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5]  // bottom face
-    ],
-    
-    elements: [
-        [2, 1, 0], [2, 0, 3],       // positive z face.
-        [6, 5, 4], [6, 4, 7],       // positive x face.
-        [10, 9, 8], [10, 8, 11],    // negative z face.
-        [14, 13, 12], [14, 12, 15], // negative x face.
-        [18, 17, 16], [18, 16, 19], // top face.
-        [20, 21, 22], [23, 20, 22]  // bottom face
-    ]
-}
+const voxelShader = createShader(VoxelShader.source.Fragment, VoxelShader.source.Vertex);
 
 export type VoxelSampleFunction = (pos : vec3) => vec4;
 
@@ -53,16 +32,20 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     
     cmd : REGL.DrawCommand;
 
+    private scale = 1;
+
+    private batches : ChunkProps[] = [];
+
     constructor(regl : Regl) {
         this.regl = regl;
 
         this.cmd = regl({
-            frag: basicShader.source.Fragment,
-            vert: basicShader.source.Vertex,
+            frag: voxelShader.source.Fragment,
+            vert: voxelShader.source.Vertex,
             attributes: {
-                vertex: cube.vertex
+                vertex: CubeDefinition.vertex
             },
-            elements: cube.elements,
+            elements: CubeDefinition.elements,
             uniforms: {
                 tex: regl.prop<ChunkProps>("tex"),
                 model: regl.prop<ChunkProps>("model"),
@@ -128,6 +111,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     private updateChunk(chunk : Chunk) {
         // Change to only update relevant parts
         chunk.texture.subimage(chunk.data);
+        this.updateBatches()
     }
 
     getChunk(pos : vec3) {
@@ -164,11 +148,12 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             index,
             v
         );
+        this.updateBatches();
         return v;
     }
 
-    getBatch() : ChunkProps[] {
-        return [...this.chunks.values()].filter(c => !c.isEmpty).map(chunk => ({
+    updateBatches() {
+        this.batches = [...this.chunks.values()].filter(c => !c.isEmpty).map(chunk => ({
             model: chunk.transform.worldMatrix,
             offset: chunk.position,
             size: CHUNK_SIZE,
@@ -176,7 +161,12 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         }));
     }
 
+    setScale(scale : number) {
+        if(scale === this.scale) return;
+        
+    }
+
     render() {
-        this.cmd(this.getBatch());
+        this.cmd(this.batches);
     }
 }

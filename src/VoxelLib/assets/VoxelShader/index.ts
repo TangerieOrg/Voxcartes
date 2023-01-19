@@ -7,8 +7,8 @@ const source : ShaderSource = {
     Vertex
 }
 
-const BasicShader : ShaderInitType = {
+const VoxelShader : ShaderInitType = {
     source
 }
 
-export default BasicShader;
+export default VoxelShader;

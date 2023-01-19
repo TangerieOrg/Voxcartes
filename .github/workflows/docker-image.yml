@@ -1,8 +1,9 @@
 name: Docker Image CI
 
 env:
-  IMAGE_NAME: voxcartes
+  IMAGE_NAME: docker.tangerie.xyz/${{ github.event.repository.name }}
   ARCH_LIST: linux/arm64/v8,linux/amd64
+  CURRENT_TAG: ${{ github.sha }}
 
 on:
   push:
@@ -13,9 +14,7 @@ on:
 jobs:
   build:
     runs-on: [self-hosted, media]
-    name: Build and push docker image to swarm
-    env:
-      CURRENT_TAG: ${{ github.sha }}
+    name: Build docker image to private registry
     steps:
       - name: Pull repo
         uses: actions/checkout@v3
@@ -31,10 +30,25 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Print data
-        run: echo Building to "latest" and ${{env.CURRENT_TAG}}
+        run: echo Building to ${{env.IMAGE_NAME}} ${{env.CURRENT_TAG}}
 
-      - name: Build and push image
-        run: docker buildx build --push --platform ${{env.ARCH_LIST}} -t docker.tangerie.xyz/${{env.IMAGE_NAME}}:latest -t docker.tangerie.xyz/${{env.IMAGE_NAME}}:${{env.CURRENT_TAG}} .
+      - name: Build and push web image
+        # run: docker buildx build --push --platform ${{env.ARCH_LIST}} -t ${{env.IMAGE_NAME}}:${{env.CURRENT_TAG}} -t ${{env.IMAGE_NAME}}:latest web
+        run: >
+          docker buildx build 
+          --push
+          --platform ${{env.ARCH_LIST}}
+          -t ${{env.IMAGE_NAME}}:${{env.CURRENT_TAG}}
+          -t ${{env.IMAGE_NAME}}:latest
+          web
+
+  deploy:
+    name: Deploys docker image to swarm
+    runs-on: [self-hosted, media]
+    needs: build
+    steps:
+      - name: Pull repo
+        uses: actions/checkout@v3
 
       - name: Run image
-        run: docker stack deploy -c docker-compose.yml ${{env.IMAGE_NAME}}
+        run:  docker stack deploy -c docker-compose.yml ${{ github.event.repository.name }}

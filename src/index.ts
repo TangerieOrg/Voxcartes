@@ -1,13 +1,17 @@
 import REGL, { DefaultContext, Vec4 } from "regl";
 import Stats from "stats.js";
 
-import { createNoise2D, createNoise4D } from 'simplex-noise';
+import { createNoise2D } from 'simplex-noise';
 
 import compat from "./VoxelLib/compat";
 import Camera from "./VoxelLib/Camera";
-import { mat4, quat, vec3, vec4 } from "gl-matrix";
+import { mat4, quat, vec3 } from "gl-matrix";
 import World, { VoxelSampleFunction } from "./VoxelLib/World/World";
 import { CHUNK_SIZE } from "./VoxelLib/World/contants";
+import { createShader } from "./VoxelLib/Shader/ShaderUtil";
+import BasicShader from "./VoxelLib/assets/BasicShader";
+import CubeDefinition from "./VoxelLib/Shapes/Cube";
+import ObjectTransform from "./VoxelLib/Shared/Object";
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
@@ -16,7 +20,7 @@ const regl = compat.overrideContextType(() => REGL());
 
 
 const camera = new Camera(regl);
-camera.position = [-2, -2, -16];
+camera.position = [0, 0, -2];
 camera.updateMatrices();
 
 const cameraCommand = regl({
@@ -48,9 +52,18 @@ const voxSample : VoxelSampleFunction = ([x, y, z]) => {
     ]
 }
 
+world.setScale(2);
 
+// world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample);
 
-world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample)
+world.generateFromFunction([0,0,0], [1,1,1], ([x, y, z]) => {
+    return [
+        (x / CHUNK_SIZE) * 255,
+        (y / CHUNK_SIZE) * 255,
+        (z / CHUNK_SIZE) * 255,
+        255
+    ]
+})
 
 
 const CLEAR_COLOR: Vec4 = [0.1, 0.1, 0.1, 1];
@@ -120,11 +133,32 @@ const handleCameraInput = (() => {
     }
 })()
 
+
+const basicShader = createShader(BasicShader.source.Fragment, BasicShader.source.Vertex);
+
+const testCubeCmd = regl({
+    frag: basicShader.source.Fragment,
+    vert: basicShader.source.Vertex,
+    attributes: {
+        vertex: CubeDefinition.vertex,
+        normal: CubeDefinition.normals
+    },
+    elements: CubeDefinition.elements,
+    uniforms: {
+        model: regl.prop<{ model: mat4}>("model")
+    }
+})
+
+const cubeTransform = new ObjectTransform();
+
 const onFrame = (ctxt : DefaultContext) => {
     cameraCommand({
 
     }, () => {
-        world.render();
+        // world.render();
+        testCubeCmd({
+            model: cubeTransform.worldMatrix
+        })
     })
 
     if(ctxt.tick % 30 === 0) {

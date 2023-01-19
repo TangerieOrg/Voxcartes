@@ -4,7 +4,7 @@ services:
   web:
     ports:
       - 8082:3000
-    image: ${IMAGE_NAME}:latest
+    image: ${REG_NAME}/${REPO}:latest
     deploy:
       replicas: 2
 

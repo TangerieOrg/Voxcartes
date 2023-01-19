@@ -95,7 +95,6 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         return this;
     }
 
-
     generateFromFunction(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction) {
         for(let x = minChunk[0]; x < maxChunk[0]; x++) {
             for(let y = minChunk[1]; y < maxChunk[1]; y++) {
@@ -106,6 +105,20 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         }
 
         return this;
+    }
+
+    createGenerationQueue(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction) {
+        const queue : (() => void)[] = [];
+        
+        for(let x = minChunk[0]; x < maxChunk[0]; x++) {
+            for(let y = minChunk[1]; y < maxChunk[1]; y++) {
+                for(let z = minChunk[2]; z < maxChunk[2]; z++) {
+                    queue.push(() => this.setChunkFromFunction([x, y, z], func));
+                }
+            }
+        }
+
+        return queue;
     }
 
     private updateChunk(chunk : Chunk) {

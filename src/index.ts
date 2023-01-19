@@ -20,7 +20,7 @@ const regl = compat.overrideContextType(() => REGL());
 
 
 const camera = new Camera(regl);
-camera.position = [0, 0, -2];
+camera.position = [-2, -4, -16];
 camera.updateMatrices();
 
 const cameraCommand = regl({
@@ -45,25 +45,23 @@ const voxSample : VoxelSampleFunction = ([x, y, z]) => {
     const floorHeight = (noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5) * CHUNK_SIZE + 2 * CHUNK_SIZE;
     
     return [
-        (x / (CHUNK_SIZE * 8)) * 255, 
+        (x / (CHUNK_SIZE * 16)) * 255, 
         (y / (CHUNK_SIZE * 3)) * 255, 
-        (z / (CHUNK_SIZE * 8)) * 255, 
+        (z / (CHUNK_SIZE * 16)) * 255, 
         y < floorHeight ? 255 : 0
     ]
 }
 
-world.setScale(2);
+// world.setScale(2);
 
-// world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample);
-
-world.generateFromFunction([0,0,0], [1,1,1], ([x, y, z]) => {
-    return [
-        (x / CHUNK_SIZE) * 255,
-        (y / CHUNK_SIZE) * 255,
-        (z / CHUNK_SIZE) * 255,
-        255
-    ]
-})
+// world.generateFromFunction([0,0,0], [1,1,1], ([x, y, z]) => {
+//     return [
+//         (x / CHUNK_SIZE) * 255,
+//         (y / CHUNK_SIZE) * 255,
+//         (z / CHUNK_SIZE) * 255,
+//         255
+//     ]
+// })
 
 
 const CLEAR_COLOR: Vec4 = [0.1, 0.1, 0.1, 1];
@@ -151,14 +149,17 @@ const testCubeCmd = regl({
 
 const cubeTransform = new ObjectTransform();
 
+const queue = world.createGenerationQueue([0, 0, 0], [16, 3, 16], voxSample);
+
 const onFrame = (ctxt : DefaultContext) => {
+    if(queue.length > 0) queue.pop()?.();
     cameraCommand({
 
     }, () => {
-        // world.render();
-        testCubeCmd({
-            model: cubeTransform.worldMatrix
-        })
+        world.render();
+        // testCubeCmd({
+        //     model: cubeTransform.worldMatrix
+        // })
     })
 
     if(ctxt.tick % 30 === 0) {
@@ -169,6 +170,7 @@ const onFrame = (ctxt : DefaultContext) => {
 }
 
 
+
 regl.frame((ctxt) => {
     stats.begin();
     regl.clear({
@@ -177,3 +179,5 @@ regl.frame((ctxt) => {
     onFrame(ctxt);
     stats.end();
 })
+
+// world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample);

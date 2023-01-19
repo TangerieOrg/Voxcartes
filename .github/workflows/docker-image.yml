@@ -45,7 +45,7 @@ jobs:
           --platform ${{env.ARCH_LIST}}
           -t ${{env.REG_NAME}}/${{env.REPO}}:${{env.CURRENT_TAG}}
           -t ${{env.REG_NAME}}/${{env.REPO}}:latest
-          web
+          .
 
   deploy:
     name: Deploys docker image to swarm

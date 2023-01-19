@@ -4,6 +4,7 @@ env:
   REG_NAME: docker.tangerie.xyz
   ARCH_LIST: linux/arm64/v8,linux/amd64
   CURRENT_TAG: ${{ github.sha }}
+  RAW_REPO_NAME: ${{ github.event.repository.name }}
 
 on:
   push:
@@ -18,7 +19,7 @@ jobs:
     steps:
       - name: downcase REPO
         run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "REPO=${RAW_REPO_NAME,,}" >>${GITHUB_ENV}
 
       - name: Pull repo
         uses: actions/checkout@v3
@@ -53,7 +54,7 @@ jobs:
     steps:
       - name: downcase REPO
         run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "REPO=${RAW_REPO_NAME,,}" >>${GITHUB_ENV}
       - name: Pull repo
         uses: actions/checkout@v3
 

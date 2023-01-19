@@ -152,7 +152,7 @@ const cubeTransform = new ObjectTransform();
 const queue = world.createGenerationQueue([0, 0, 0], [16, 3, 16], voxSample);
 
 const onFrame = (ctxt : DefaultContext) => {
-    for(let i = 0; i < 3; i++) if(queue.length > 0) queue.pop()?.();
+    if(queue.length > 0) queue.pop()?.();
     cameraCommand({
 
     }, () => {

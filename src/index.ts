@@ -12,15 +12,17 @@ import { createShader } from "./VoxelLib/Shader/ShaderUtil";
 import BasicShader from "./VoxelLib/assets/BasicShader";
 import CubeDefinition from "./VoxelLib/Shapes/Cube";
 import ObjectTransform from "./VoxelLib/Shared/Object";
+import DebugUI from "./VoxelLib/Debug/DebugUI";
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
 
 const regl = compat.overrideContextType(() => REGL());
 
+const debug = new DebugUI();
 
 const camera = new Camera(regl);
-camera.position = [-10, -4, -18];
+camera.position = [-10, -3, -18];
 camera.updateMatrices();
 
 const cameraCommand = regl({
@@ -151,8 +153,12 @@ const cubeTransform = new ObjectTransform();
 
 const queue = world.createGenerationQueue([0, 0, 0], [16, 3, 16], voxSample);
 
+// world.generateFromFunction([0, 0, 0], [4, 3, 4], voxSample)
+
+// world.setChunkFromFunction([0, 0, 0], voxSample);
+
 const onFrame = (ctxt : DefaultContext) => {
-    if(queue.length > 0) queue.pop()?.();
+    queue.pop()?.();
     cameraCommand({
 
     }, () => {
@@ -163,7 +169,8 @@ const onFrame = (ctxt : DefaultContext) => {
     })
 
     if(ctxt.tick % 30 === 0) {
-        document.getElementById("debug-camera-position")!.innerText = `${camera.position[0]} ${camera.position[1]} ${camera.position[2]}`
+        debug.set("Camera Position", camera.position);
+        debug.set("Num Voxels", world.chunks.size * 32 * 32 * 32);
     }
 
     handleCameraInput();

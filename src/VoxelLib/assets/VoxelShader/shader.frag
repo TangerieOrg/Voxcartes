@@ -55,7 +55,7 @@ Raycast castRay(in vec3 origin, in vec3 stepDir) {
 }
 
 vec3 getOrigin() {
-    if (isCameraIn())return - cameraPosition + VOLUME_SIZE + offset;
+    if (isCameraIn()) return - cameraPosition + VOLUME_SIZE + offset;
     return vPos + VOLUME_SIZE;
 }
 

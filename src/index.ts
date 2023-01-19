@@ -20,7 +20,7 @@ const regl = compat.overrideContextType(() => REGL());
 
 
 const camera = new Camera(regl);
-camera.position = [-2, -4, -16];
+camera.position = [-10, -4, -18];
 camera.updateMatrices();
 
 const cameraCommand = regl({

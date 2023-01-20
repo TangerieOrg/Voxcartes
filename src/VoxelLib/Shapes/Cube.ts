@@ -1,13 +1,13 @@
 import ShapeDefinition from "./Shape";
 
-const CubeDefinition : ShapeDefinition = {
+export const createCubeDefinition = (size : number) : ShapeDefinition => ({
     vertex: [
-        [-0.5, +0.5, +0.5], [+0.5, +0.5, +0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5], // positive z face.
-        [+0.5, +0.5, +0.5], [+0.5, +0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], // positive x face
-        [+0.5, +0.5, -0.5], [-0.5, +0.5, -0.5], [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], // negative z face
-        [-0.5, +0.5, -0.5], [-0.5, +0.5, +0.5], [-0.5, -0.5, +0.5], [-0.5, -0.5, -0.5], // negative x face.
-        [-0.5, +0.5, -0.5], [+0.5, +0.5, -0.5], [+0.5, +0.5, +0.5], [-0.5, +0.5, +0.5], // top face
-        [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5]  // bottom face
+        [-size, +size, +size], [+size, +size, +size], [+size, -size, +size], [-size, -size, +size], // positive z face.
+        [+size, +size, +size], [+size, +size, -size], [+size, -size, -size], [+size, -size, +size], // positive x face
+        [+size, +size, -size], [-size, +size, -size], [-size, -size, -size], [+size, -size, -size], // negative z face
+        [-size, +size, -size], [-size, +size, +size], [-size, -size, +size], [-size, -size, -size], // negative x face.
+        [-size, +size, -size], [+size, +size, -size], [+size, +size, +size], [-size, +size, +size], // top face
+        [-size, -size, -size], [+size, -size, -size], [+size, -size, +size], [-size, -size, +size]  // bottom face
     ],
     
     elements: [
@@ -30,6 +30,8 @@ const CubeDefinition : ShapeDefinition = {
         // bottom
         [0.0, -1.0, 0.0], [0.0, -1.0, 0.0], [0.0, -1.0, 0.0], [0.0, -1.0, 0.0]
     ]
-}
+})
+
+const CubeDefinition = createCubeDefinition(0.5);
 
 export default CubeDefinition;

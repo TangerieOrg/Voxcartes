@@ -22,8 +22,9 @@ const regl = compat.overrideContextType(() => REGL());
 const debug = new DebugUI();
 
 const camera = new Camera(regl);
-camera.position = [-10, -3, -18];
+camera.position = [-4, -3, 8];
 camera.updateMatrices();
+camera.rotate([0, Math.PI, 0]);
 
 const cameraCommand = regl({
     context: camera.createContext(),
@@ -42,28 +43,28 @@ const world = new World(regl);
 const NOISE_SCALE = 100;
 
 const noise2d = createNoise2D();
-
+const floorOffset = 0;
+const RESOLUTION = 32;
+const FLOOR_RESOLUTION = 16;
 const voxSample : VoxelSampleFunction = ([x, y, z]) => {
-    const floorHeight = (noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5) * CHUNK_SIZE + 2 * CHUNK_SIZE;
+    
+    const floorHeight = (noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5) * RESOLUTION;
     
     return [
-        (x / (CHUNK_SIZE * 16)) * 255, 
-        (y / (CHUNK_SIZE * 3)) * 255, 
-        (z / (CHUNK_SIZE * 16)) * 255, 
-        y < floorHeight ? 255 : 0
+        (x / (RESOLUTION * 16)) * 255, 
+        (y / (RESOLUTION * 2)) * 255, 
+        (z / (RESOLUTION * 16)) * 255, 
+        (y - RESOLUTION) < floorHeight ? 255 : 0
     ]
 }
-
-// world.setScale(2);
-
-// world.generateFromFunction([0,0,0], [1,1,1], ([x, y, z]) => {
-//     return [
-//         (x / CHUNK_SIZE) * 255,
-//         (y / CHUNK_SIZE) * 255,
-//         (z / CHUNK_SIZE) * 255,
-//         255
-//     ]
-// })
+const floorSample : VoxelSampleFunction = ([x, y, z]) => {
+    return [
+        (x / (FLOOR_RESOLUTION * 16)) * 255, 
+        (y / (FLOOR_RESOLUTION * 2)) * 255, 
+        (z / (FLOOR_RESOLUTION * 16)) * 255, 
+        255
+    ]
+}
 
 
 const CLEAR_COLOR: Vec4 = [0.1, 0.1, 0.1, 1];
@@ -151,26 +152,19 @@ const testCubeCmd = regl({
 
 const cubeTransform = new ObjectTransform();
 
-const queue = world.createGenerationQueue([0, 0, 0], [16, 3, 16], voxSample);
+const topQueue = world.createGenerationQueue([0, 1, 0], [16, 2, 16], voxSample, RESOLUTION);
 
-// world.generateFromFunction([0, 0, 0], [4, 3, 4], voxSample)
 
-// world.setChunkFromFunction([0, 0, 0], voxSample);
 
 const onFrame = (ctxt : DefaultContext) => {
-    queue.pop()?.();
-    cameraCommand({
-
-    }, () => {
+    if(topQueue.length > 0) topQueue.pop()?.();
+    cameraCommand({}, () => {
         world.render();
-        // testCubeCmd({
-        //     model: cubeTransform.worldMatrix
-        // })
     })
 
     if(ctxt.tick % 30 === 0) {
         debug.set("Camera Position", camera.position);
-        debug.set("Num Voxels", world.chunks.size * 32 * 32 * 32);
+        debug.set("Num Voxels", world.chunks.size * RESOLUTION * RESOLUTION * RESOLUTION);
     }
 
     handleCameraInput();
@@ -188,3 +182,4 @@ regl.frame((ctxt) => {
 })
 
 // world.generateFromFunction([0, 0, 0], [8, 3, 8], voxSample);
+world.generateFromFunction([0, 0, 0], [16, 1, 16], floorSample, FLOOR_RESOLUTION);

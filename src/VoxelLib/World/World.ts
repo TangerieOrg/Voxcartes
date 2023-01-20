@@ -5,23 +5,16 @@ import { CHUNK_SIZE } from "./contants";
 import { createEmptyChunk, positionToChunkPosition, positionToIndex, positionToStartIndexInChunk } from "./GeoUtil";
 
 import { createShader } from "../Shader/ShaderUtil";
-import VoxelShader from "../assets/VoxelShader";
+import SVOShader from "../assets/SVOShader";
 import { CameraContext } from "../Camera/Camera";
 import { AsContext } from "../Shared/DataUtil";
-import { ChunkProps } from "./Chunk";
-import CubeDefinition from "../Shapes/Cube";
+import { Chunk, ChunkIndex, ChunkProps } from "./Chunk";
+import { createCubeDefinition } from "../Shapes/Cube";
 
-export type ChunkIndex = number;
-export type ChunkData = Uint8Array;
-export interface Chunk {
-    position : vec3;
-    data : ChunkData;
-    texture : Texture3D;
-    transform : ObjectTransform;
-    isEmpty : boolean;
-}
 
-const voxelShader = createShader(VoxelShader.source.Fragment, VoxelShader.source.Vertex);
+const cubeDef = createCubeDefinition(0.5);
+
+const voxelShader = createShader(SVOShader.source.Fragment, SVOShader.source.Vertex);
 
 export type VoxelSampleFunction = (pos : vec3) => vec4;
 
@@ -43,9 +36,9 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             frag: voxelShader.source.Fragment,
             vert: voxelShader.source.Vertex,
             attributes: {
-                vertex: CubeDefinition.vertex
+                vertex: cubeDef.vertex
             },
-            elements: CubeDefinition.elements,
+            elements: cubeDef.elements,
             uniforms: {
                 tex: regl.prop<ChunkProps>("tex"),
                 model: regl.prop<ChunkProps>("model"),
@@ -55,11 +48,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         });
     }
 
-    setVoxel(pos : vec3, value : vec4, update = true) {
-        const chunkPosition = positionToChunkPosition(pos);
-        const chunk = this.getOrCreateChunk(chunkPosition);
-        const posInChunk = vec3.clone(pos).map(x => x % CHUNK_SIZE) as vec3;
-        const startIndex = positionToStartIndexInChunk(posInChunk);
+    setVoxel(pos : vec3, value : vec4, update = true, resolution=CHUNK_SIZE) {
+        const chunkPosition = positionToChunkPosition(pos, resolution);
+        const chunk = this.getOrCreateChunk(chunkPosition, resolution);
+        const posInChunk = vec3.clone(pos).map(x => x % resolution) as vec3;
+        const startIndex = positionToStartIndexInChunk(posInChunk, resolution);
         chunk.data.set(value, startIndex);
 
         if(value[3] > 0) {
@@ -70,17 +63,17 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         return this;
     }
 
-    setChunkFromFunction(chunkPos : vec3, func : VoxelSampleFunction, update = true) {
-        const chunk = this.getOrCreateChunk(chunkPos);
+    setChunkFromFunction(chunkPos : vec3, func : VoxelSampleFunction, update = true, resolution=CHUNK_SIZE) {
+        const chunk = this.getOrCreateChunk(chunkPos, resolution);
         chunk.isEmpty = true;
-        let index = positionToStartIndexInChunk([0, 0, 0]);
+        let index = positionToStartIndexInChunk([0, 0, 0], resolution);
         const offsetPosition = vec3.create();
-        vec3.scale(offsetPosition, chunkPos, CHUNK_SIZE);
+        vec3.scale(offsetPosition, chunkPos, resolution);
         const currentPosition = vec3.create();
         let data : vec4;
-        for(let z = 0; z < CHUNK_SIZE; z++) {
-            for(let y = 0; y < CHUNK_SIZE; y++) {
-                for(let x = 0; x < CHUNK_SIZE; x++) {
+        for(let z = 0; z < resolution; z++) {
+            for(let y = 0; y < resolution; y++) {
+                for(let x = 0; x < resolution; x++) {
                     vec3.add(currentPosition, [x, y, z], offsetPosition);
                     data = func(currentPosition);
                     chunk.data.set(data, index)
@@ -95,11 +88,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         return this;
     }
 
-    generateFromFunction(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction) {
+    generateFromFunction(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction, resolution = CHUNK_SIZE) {
         for(let x = minChunk[0]; x < maxChunk[0]; x++) {
             for(let y = minChunk[1]; y < maxChunk[1]; y++) {
                 for(let z = minChunk[2]; z < maxChunk[2]; z++) {
-                    this.setChunkFromFunction([x, y, z], func);
+                    this.setChunkFromFunction([x, y, z], func, true, resolution);
                 }
             }
         }
@@ -107,18 +100,22 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         return this;
     }
 
-    createGenerationQueue(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction) {
-        const queue : (() => void)[] = [];
+    createGenerationQueue(minChunk : vec3, maxChunk : vec3, func : VoxelSampleFunction, resolution=CHUNK_SIZE) {
+        const queue : [() => void, vec3][] = [];
         
         for(let x = minChunk[0]; x < maxChunk[0]; x++) {
             for(let y = minChunk[1]; y < maxChunk[1]; y++) {
                 for(let z = minChunk[2]; z < maxChunk[2]; z++) {
-                    queue.push(() => this.setChunkFromFunction([x, y, z], func));
+                    queue.push([() => this.setChunkFromFunction([x, y, z], func, true, resolution),[x,y,z]]);
                 }
             }
         }
 
-        return queue;
+        queue.sort(([_, a], [__, b]) => {
+            return -vec3.sqrLen(a) + vec3.sqrLen(b);
+        })
+
+        return queue.map(x => x[0]);
     }
 
     private updateChunk(chunk : Chunk) {
@@ -131,15 +128,15 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         return this.chunks.get(positionToIndex(pos));
     }
 
-    getOrCreateChunk(pos : vec3) {
+    getOrCreateChunk(pos : vec3, resolution : number) {
         let chunk = this.getChunk(pos);
         if(chunk) return chunk;
-        return this.createChunk(pos);
+        return this.createChunk(pos, resolution);
     }
 
-    createChunk(pos : vec3) {
+    createChunk(pos : vec3, resolution : number) {
         const index = positionToIndex(pos);
-        const data = createEmptyChunk();
+        const data = createEmptyChunk(resolution);
         const chunkPos = vec3.create();
         vec3.negate(chunkPos, pos);
         
@@ -147,14 +144,15 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             position: chunkPos,
             data,
             texture: this.regl.texture3D({
-                width: CHUNK_SIZE,
-                height: CHUNK_SIZE,
-                depth: CHUNK_SIZE,
+                width: resolution,
+                height: resolution,
+                depth: resolution,
                 format: "rgba",
                 data
             }),
             transform: new ObjectTransform(),
-            isEmpty: true
+            isEmpty: true,
+            resolution
         }
         v.transform.setPosition(chunkPos);
         this.chunks.set(
@@ -169,7 +167,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.batches = [...this.chunks.values()].filter(c => !c.isEmpty).map(chunk => ({
             model: chunk.transform.worldMatrix,
             offset: chunk.position,
-            size: CHUNK_SIZE,
+            size: chunk.resolution,
             tex: chunk.texture
         }));
     }
@@ -181,5 +179,9 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     render() {
         this.cmd(this.batches);
+    }
+
+    updateNearby(position : vec3, distance : number, func : VoxelSampleFunction) {
+
     }
 }

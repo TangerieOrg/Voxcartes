@@ -10,6 +10,7 @@ export interface CameraContext {
     viewProjection : () => mat4;
     cameraPosition : () => vec3;
     cameraRotation : () => quat;
+    cameraScale : () => vec3;
 }
 
 export default class Camera extends ObjectTransform {
@@ -50,10 +51,9 @@ export default class Camera extends ObjectTransform {
     updateCameraMatrix() {
         // Create projection matrix
         mat4.perspective(this.projectionMatrix, deg2rad(this.fov), this.getAspect(), this.zNear, this.zFar);
-
         // Create view matrix (inverse of camera matrix) => offset everything by opposite of camera
         mat4.invert(this.viewMatrix, this.worldMatrix);
-        
+        mat4.scale(this.viewMatrix, this.viewMatrix, this.scale);
         mat4.multiply(this.viewProjectionMatrix, this.projectionMatrix, this.viewMatrix);
     }
 
@@ -63,7 +63,8 @@ export default class Camera extends ObjectTransform {
             projection: () => this.projectionMatrix,
             viewProjection: () => this.viewProjectionMatrix,
             cameraPosition: () => this.position,
-            cameraRotation: () => this.rotation
+            cameraRotation: () => this.rotation,
+            cameraScale: () => this.scale
         }
     }
 

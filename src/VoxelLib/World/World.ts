@@ -12,7 +12,7 @@ import { Chunk, ChunkIndex, ChunkProps } from "./Chunk";
 import { createCubeDefinition } from "../Shapes/Cube";
 
 
-const cubeDef = createCubeDefinition(0.5);
+const cubeDef = createCubeDefinition(0.499);
 
 const voxelShader = createShader(SVOShader.source.Fragment, SVOShader.source.Vertex);
 

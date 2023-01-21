@@ -28,7 +28,8 @@ export default class Renderer {
                 view: (ctx) => ctx.view,
                 projection: (ctx) => ctx.projection,
                 viewProjection: (ctx) => ctx.viewProjection,
-                cameraPosition: (ctx) => ctx.cameraPosition
+                cameraPosition: (ctx) => ctx.cameraPosition,
+                cameraScale: (ctx) => ctx.cameraScale
             }
         })
     }

@@ -4,6 +4,7 @@ import compat from "./VoxelLib/compat";
 import Camera from "./VoxelLib/Camera";
 import World, { VoxelSampleFunction } from "./VoxelLib/World/World";
 import Renderer from "./VoxelLib/Renderer";
+import { vec3 } from "gl-matrix";
 
 const regl = compat.overrideContextType(() => REGL());
 
@@ -25,11 +26,11 @@ const floorOffset = 0;
 const RESOLUTION = 32;
 const FLOOR_RESOLUTION = 16;
 const voxSample : VoxelSampleFunction = ([x, y, z]) => {
-    const floorHeight = Math.pow((noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5), 2) * RESOLUTION * 2;
+    const floorHeight = Math.pow((noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5), 2) * RESOLUTION;
     
     return [
         (x / (RESOLUTION * 16)) * 255, 
-        (y / (RESOLUTION * 3)) * 255, 
+        (y / (RESOLUTION * 2)) * 255, 
         (z / (RESOLUTION * 16)) * 255, 
         (y - RESOLUTION) < floorHeight ? 255 : 0
     ]
@@ -37,23 +38,23 @@ const voxSample : VoxelSampleFunction = ([x, y, z]) => {
 const floorSample : VoxelSampleFunction = ([x, y, z]) => {
     return [
         (x / (FLOOR_RESOLUTION * 16)) * 255, 
-        (y / (FLOOR_RESOLUTION * 3)) * 255, 
+        (y / (FLOOR_RESOLUTION * 2)) * 255, 
         (z / (FLOOR_RESOLUTION * 16)) * 255, 
         255
     ]
 }
 
 
-world.createGenerationQueue([0, 1, 0], [16, 3, 16], voxSample, RESOLUTION);
+world.createGenerationQueue([0, 1, 0], [16, 2, 16], voxSample, RESOLUTION);
 
-// renderer.debug.set("Camera Position", () => camera.getPosition());
+
+renderer.debug.set("Camera Position", () => camera.getPosition());
 renderer.debug.set("Num Voxels", () => world.numVoxels);
 renderer.debug.set("Chunk Queue", () => world.queue.length);
 
-
 renderer.onFrame = (ctxt) => {
     world.popQueue();
-    world.render();
+    world.render(camera);
 }
 
 renderer.start();

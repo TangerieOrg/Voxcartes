@@ -47,7 +47,8 @@ export default class ObjectTransform {
         this.updateMatrices();
     }
 
-    getPosition() { this.position }
+    getPosition() { return this.position }
+    getScale() { return this.scale }
 
     setScale(scale : vec3) {
         vec3.copy(this.scale, scale);

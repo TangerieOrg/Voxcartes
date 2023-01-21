@@ -1,12 +1,12 @@
 import { vec3, vec4 } from "gl-matrix";
-import REGL, { DrawCommand, Regl, Texture3D } from "regl";
+import REGL, { Regl } from "regl";
 import ObjectTransform from "../Shared/Object";
 import { CHUNK_SIZE } from "./contants";
 import { createEmptyChunk, positionToChunkPosition, positionToIndex, positionToStartIndexInChunk } from "./GeoUtil";
 
 import { createShader } from "../Shader/ShaderUtil";
 import SVOShader from "../assets/SVOShader";
-import { CameraContext } from "../Camera/Camera";
+import Camera, { CameraContext } from "../Camera/Camera";
 import { AsContext } from "../Shared/DataUtil";
 import { Chunk, ChunkIndex, ChunkProps } from "./Chunk";
 import { createCubeDefinition } from "../Shapes/Cube";
@@ -23,11 +23,12 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     regl : Regl;
     
-    cmd : REGL.DrawCommand;
-
-    private scale = 1;
+    outsideCmd : REGL.DrawCommand;
+    insideCmd : REGL.DrawCommand;
 
     private batches : ChunkProps[] = [];
+    private currentChunk?: ChunkIndex;
+    private currentChunkRender? : ChunkProps;
 
     public queue : (() => void)[] = [];
 
@@ -37,7 +38,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     constructor(regl : Regl) {
         this.regl = regl;
 
-        this.cmd = regl({
+        this.outsideCmd = regl({
             frag: voxelShader.source.Fragment,
             vert: voxelShader.source.Vertex,
             attributes: {
@@ -49,6 +50,29 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
                 model: regl.prop<ChunkProps>("model"),
                 size: regl.prop<ChunkProps>("size"),
                 offset: regl.prop<ChunkProps>("offset")
+            },
+            cull: {
+                enable: true,
+                face: 'back'
+            }
+        });
+
+        this.insideCmd = regl({
+            frag: voxelShader.source.Fragment,
+            vert: voxelShader.source.Vertex,
+            attributes: {
+                vertex: cubeDef.vertex
+            },
+            elements: cubeDef.elements,
+            uniforms: {
+                tex: regl.prop<ChunkProps>("tex"),
+                model: regl.prop<ChunkProps>("model"),
+                size: regl.prop<ChunkProps>("size"),
+                offset: regl.prop<ChunkProps>("offset")
+            },
+            cull: {
+                enable: true,
+                face: 'front'
             }
         });
     }
@@ -172,7 +196,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     }
 
     updateBatches() {
-        this.batches = [...this.chunks.values()].filter(c => !c.isEmpty).map(chunk => ({
+        this.batches = [...this.chunks.values()].filter(c => !c.isEmpty && c.position !== this.currentChunkRender?.offset).map(chunk => ({
             model: chunk.transform.worldMatrix,
             offset: chunk.position,
             size: chunk.resolution,
@@ -181,14 +205,33 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.updateNumVoxels();
     }
 
-    setScale(scale : number) {
-        if(scale === this.scale) return;
-        
+    getCurrentChunkPos(camera : Camera) {
+        const chunkPos = vec3.divide(vec3.create(), camera.getPosition(), camera.getScale());
+        vec3.negate(chunkPos, chunkPos);
+        vec3.add(chunkPos, chunkPos, [0.5, 0.5, 0.5]);
+        vec3.floor(chunkPos, chunkPos);
+        return chunkPos;
     }
 
-    render() {
-        this.cmd(this.batches);
+    render(camera : Camera) {
+        const currentChunkIndex = positionToIndex(this.getCurrentChunkPos(camera));
+        if(currentChunkIndex !== this.currentChunk) {
+            const chunk = this.chunks.get(currentChunkIndex);
+            if(chunk) {
+                this.currentChunkRender = {
+                    model: chunk.transform.worldMatrix,
+                    offset: chunk.position,
+                    size: chunk.resolution,
+                    tex: chunk.texture
+                }
+                this.updateBatches();
+            }
+            
+        }
+        this.outsideCmd(this.batches);
+        if(this.currentChunkRender) this.insideCmd(this.currentChunkRender);
     }
+
 
     private updateNumVoxels() {
         this._numVoxels = 0;

@@ -189,8 +189,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     getCurrentChunkPos(camera : Camera) {
         const chunkPos = vec3.divide(vec3.create(), camera.getPosition(), camera.getScale());
         vec3.negate(chunkPos, chunkPos);
-        vec3.add(chunkPos, chunkPos, [0.5, 0.5, 0.5]);
-        vec3.floor(chunkPos, chunkPos);
+        // vec3.add(chunkPos, chunkPos, [0.5, 0.5, 0.5]);
+        vec3.round(chunkPos, chunkPos);
         return chunkPos;
     }
 

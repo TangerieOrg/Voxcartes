@@ -66,8 +66,8 @@ void main() {
     
     Raycast castResult = castRay(origin, stepDir);
 
-    if (castResult.position.x == -1.0)discard;
-    
+    if (castResult.position.x == -1.0) discard;
+
     color = castResult.result;
     
 }

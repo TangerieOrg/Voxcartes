@@ -29,6 +29,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     private batches : ChunkProps[] = [];
 
+    public queue : (() => void)[] = [];
+
+    private _numVoxels = 0;
+    public get numVoxels() { return this._numVoxels }
+
     constructor(regl : Regl) {
         this.regl = regl;
 
@@ -115,8 +120,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             return -vec3.sqrLen(a) + vec3.sqrLen(b);
         })
 
-        return queue.map(x => x[0]);
+        this.queue.push(...queue.map(x => x[0]));
+        
     }
+
+    popQueue() { this.queue.pop()?.(); }
 
     private updateChunk(chunk : Chunk) {
         // Change to only update relevant parts
@@ -170,6 +178,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             size: chunk.resolution,
             tex: chunk.texture
         }));
+        this.updateNumVoxels();
     }
 
     setScale(scale : number) {
@@ -179,6 +188,15 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     render() {
         this.cmd(this.batches);
+    }
+
+    private updateNumVoxels() {
+        this._numVoxels = 0;
+
+        for(const c of this.chunks.values()) {
+            if(c.isEmpty) continue;
+            this._numVoxels += c.resolution**3;
+        }
     }
 
     updateNearby(position : vec3, distance : number, func : VoxelSampleFunction) {

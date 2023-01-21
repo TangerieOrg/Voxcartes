@@ -1,9 +1,17 @@
+export type DebugUIValueType<T = any> = (() => T) | T;
+
+interface DebugMapValue<T = any> {
+    valueEl : HTMLParagraphElement,
+    titleEl : HTMLParagraphElement,
+    value: DebugUIValueType<T>
+}
+
 export default class DebugUI {
-    private values : Record<string, { valueEl : HTMLParagraphElement, titleEl : HTMLParagraphElement, value : any}> = {};
+    private values : Record<string, DebugMapValue> = {};
 
     private htmlEl = document.getElementById("debug") as HTMLDivElement;
 
-    set(key : string, value : any) {
+    set<T>(key : string, value : DebugUIValueType<T>) {
         if(!this.values[key]) {
             this.values[key] = {
                 value,
@@ -15,14 +23,24 @@ export default class DebugUI {
             this.htmlEl.appendChild(this.values[key].valueEl);
         }
 
-        const { valueEl } = this.values[key]!;
+        this.updateSingle(this.values[key]!);
+    }
+
+    private updateSingle(v : DebugMapValue) {
+        const { valueEl, value: rawValue } = v;
+
+            const value = typeof rawValue === "function" ? rawValue() : rawValue;
         
-        if(Array.isArray(value)) {
-            valueEl.innerText = value.join(" ");
-        } else if (typeof value === "number" || typeof value === "bigint") {
-            valueEl.innerText = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        } else {
-            valueEl.innerText = String(value);
-        }
+            if(Array.isArray(value)) {
+                valueEl.innerText = value.join(" ");
+            } else if (typeof value === "number" || typeof value === "bigint") {
+                valueEl.innerText = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } else {
+                valueEl.innerText = String(value);
+            }
+    }
+
+    update() {
+        for(const v of Object.values(this.values)) this.updateSingle(v);
     }
 }

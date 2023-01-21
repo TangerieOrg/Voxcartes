@@ -23,8 +23,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     regl : Regl;
     
-    outsideCmd : REGL.DrawCommand;
-    insideCmd : REGL.DrawCommand;
+    cmd : REGL.DrawCommand;
 
     private batches : ChunkProps[] = [];
     private currentChunk?: ChunkIndex;
@@ -38,7 +37,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     constructor(regl : Regl) {
         this.regl = regl;
 
-        this.outsideCmd = regl({
+        this.cmd = regl({
             frag: voxelShader.source.Fragment,
             vert: voxelShader.source.Vertex,
             attributes: {
@@ -51,29 +50,10 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
                 size: regl.prop<ChunkProps>("size"),
                 offset: regl.prop<ChunkProps>("offset")
             },
-            cull: {
+            cull: (ctxt, props : ChunkProps) => ({
                 enable: true,
-                face: 'back'
-            }
-        });
-
-        this.insideCmd = regl({
-            frag: voxelShader.source.Fragment,
-            vert: voxelShader.source.Vertex,
-            attributes: {
-                vertex: cubeDef.vertex
-            },
-            elements: cubeDef.elements,
-            uniforms: {
-                tex: regl.prop<ChunkProps>("tex"),
-                model: regl.prop<ChunkProps>("model"),
-                size: regl.prop<ChunkProps>("size"),
-                offset: regl.prop<ChunkProps>("offset")
-            },
-            cull: {
-                enable: true,
-                face: 'front'
-            }
+                face: props.index === this.currentChunk ? 'front' : 'back'
+            })
         });
     }
 
@@ -196,11 +176,12 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     }
 
     updateBatches() {
-        this.batches = [...this.chunks.values()].filter(c => !c.isEmpty && c.position !== this.currentChunkRender?.offset).map(chunk => ({
+        this.batches = [...this.chunks.values()].filter(c => !c.isEmpty).map(chunk => ({
             model: chunk.transform.worldMatrix,
             offset: chunk.position,
             size: chunk.resolution,
-            tex: chunk.texture
+            tex: chunk.texture,
+            index: positionToIndex(chunk.position)
         }));
         this.updateNumVoxels();
     }
@@ -214,22 +195,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     }
 
     render(camera : Camera) {
-        const currentChunkIndex = positionToIndex(this.getCurrentChunkPos(camera));
-        if(currentChunkIndex !== this.currentChunk) {
-            const chunk = this.chunks.get(currentChunkIndex);
-            if(chunk) {
-                this.currentChunkRender = {
-                    model: chunk.transform.worldMatrix,
-                    offset: chunk.position,
-                    size: chunk.resolution,
-                    tex: chunk.texture
-                }
-                this.updateBatches();
-            }
-            
-        }
-        this.outsideCmd(this.batches);
-        if(this.currentChunkRender) this.insideCmd(this.currentChunkRender);
+        this.currentChunk = positionToIndex(this.getCurrentChunkPos(camera));
+        this.cmd(this.batches);
     }
 
 
@@ -240,9 +207,5 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             if(c.isEmpty) continue;
             this._numVoxels += c.resolution**3;
         }
-    }
-
-    updateNearby(position : vec3, distance : number, func : VoxelSampleFunction) {
-
     }
 }

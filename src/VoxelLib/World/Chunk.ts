@@ -8,6 +8,7 @@ export interface ChunkProps {
     model: mat4;
     size: number;
     offset: vec3;
+    index: number;
 }
 
 

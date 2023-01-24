@@ -7,17 +7,19 @@ precision highp sampler3D;
 uniform sampler3D tex;
 
 uniform vec3 cameraPosition;
+uniform vec3 cameraScale;
 uniform float size;
 uniform vec3 offset;
 
 in vec3 vPos;
 in vec3 screenPos;
 in vec3 worldPos;
-out vec4 color;
+
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 position;
 
 #define MAX_STEPS 100
 #define VOLUME_SIZE 0.5
-#define VOLUME_SCALE 1.0
 
 struct Raycast {
     vec4 result;
@@ -25,7 +27,7 @@ struct Raycast {
 };
 
 bool isCameraIn() {
-    vec3 cameraPosOffset = cameraPosition - offset;
+    vec3 cameraPosOffset = (cameraPosition / cameraScale) - offset;
     return
     (cameraPosOffset.z < VOLUME_SIZE && cameraPosOffset.z > -VOLUME_SIZE)&&
     (cameraPosOffset.y < VOLUME_SIZE && cameraPosOffset.y > -VOLUME_SIZE)&&
@@ -55,7 +57,7 @@ Raycast castRay(in vec3 origin, in vec3 stepDir) {
 }
 
 vec3 getOrigin() {
-    if (isCameraIn()) return - cameraPosition + VOLUME_SIZE + offset;
+    if (isCameraIn()) return -cameraPosition / cameraScale + VOLUME_SIZE + offset;
     return vPos + VOLUME_SIZE;
 }
 
@@ -66,8 +68,8 @@ void main() {
     
     Raycast castResult = castRay(origin, stepDir);
 
-    if (castResult.position.x == -1.0)discard;
-    
+    if (castResult.position.x == -1.0) discard;
+    castResult.position = (castResult.position - offset) / VOLUME_SIZE;
     color = castResult.result;
-    
+    position = vec4(castResult.position, distance(castResult.position, -cameraPosition / cameraScale));
 }

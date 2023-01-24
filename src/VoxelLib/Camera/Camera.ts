@@ -33,7 +33,6 @@ export default class Camera extends ObjectTransform {
         super();
         this.regl = regl;
         this.updateCameraMatrix();
-
         window.addEventListener("resize", () => this.updateCameraMatrix());
     }
 

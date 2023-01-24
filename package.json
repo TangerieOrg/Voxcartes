@@ -17,6 +17,7 @@
     "@types/node": "^18.11.17",
     "@types/stats.js": "^0.17.0",
     "parcel": "^2.8.2",
+    "parcel-resolver-tspaths": "^0.0.9",
     "typescript": "^4.9.4"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import Fragment from "./shader.frag";
 import Vertex from "./shader.vert"
-import { ShaderInitType, ShaderSource } from "../../Shader/Shader";
+import { ShaderInitType, ShaderSource } from "@VoxelLib/Shader/Shader";
 
 const source : ShaderSource = {
     Fragment,

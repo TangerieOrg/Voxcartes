@@ -6,7 +6,7 @@ precision highp sampler2D;
 
 in vec2 uv;
 
-uniform sampler2D albedoTex, positionTex;
+uniform sampler2D albedoTex, positionTex, normalTex;
 uniform vec3 cameraPosition;
 uniform vec3 lightPos;
 uniform vec2 textureSize;
@@ -31,27 +31,27 @@ vec3 calculateNormal(in ivec2 textureCoord) {
     return normalize(vec3(-dzdx, -dzdy, 1.0));
 }
 
-vec3 _calculateNormal(in ivec2 textureCoord) {
-    vec3 p0 = getPosition(textureCoord);
-    vec3 p1 = getPosition(textureCoord + offset.xy);
-    vec3 p2 = getPosition(textureCoord + offset.yx);
-
+vec3 cNormal(in ivec2 textureCoord) {
+    vec3 p = getPosition(textureCoord) - cameraPosition;
     return normalize(
         cross(
-            p2 - p0,
-            p1 - p0
+            dFdx(p),
+            dFdy(p)
         )
     );
+
 }
+
 
 void main() {
     ivec2 textureCoord = ivec2(floor(uv * textureSize));
     // vec3 albedo = texture(albedoTex, uv).xyz;
     vec3 albedo = texelFetch(albedoTex, textureCoord, 0).rgb;
     vec4 position = texelFetch(positionTex, textureCoord, 0);
-    vec3 normal = calculateNormal(textureCoord);
+    // vec3 normal = cNormal(textureCoord);
+    vec3 normal = texelFetch(normalTex, textureCoord, 0).xyz;
     
     float lightInfluence = min(1.0, max(0., dot(normal, normalize(lightPos))) + 0.5);
     if(position.a == 0.) discard;
-    color = vec4(lightInfluence * albedo, 1);
+    color = vec4(albedo * lightInfluence, 1);
 }

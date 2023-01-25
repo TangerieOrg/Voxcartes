@@ -19,7 +19,7 @@ export type RenderContext = DefaultContext & AsContext<CameraContext>;
 const sampleFBOShader = createShader(SampleFBOShader.source.Fragment, SampleFBOShader.source.Vertex);
 
 const lightPos : vec3 = vec3.create();
-vec3.set(lightPos, 0, -1, 1);
+vec3.set(lightPos, 0, 1, 1);
 
 export default class Renderer {
     private regl : Regl;
@@ -56,6 +56,7 @@ export default class Renderer {
         this.fboManager = new FBOManager(this.regl, [
             regl.texture({type: 'float'}), // Color
             regl.texture({type: 'float'}), // Position
+            regl.texture({type: 'float'}), // Normal
         ]);
 
         
@@ -67,6 +68,7 @@ export default class Renderer {
             uniforms: {
                 albedoTex: this.fboManager.get(0),
                 positionTex: this.fboManager.get(1),
+                normalTex: this.fboManager.get(2),
                 lightPos: () => lightPos,
                 textureSize: () => this.fboManager.texSize
             },

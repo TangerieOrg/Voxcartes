@@ -6,6 +6,7 @@ import { createEmptyChunk, positionToChunkPosition, positionToIndex, positionToS
 
 import { createShader } from "../Shader/ShaderUtil";
 import SVOShader from "../assets/Shaders/SVOShader";
+import AABBVoxelShader from "../assets/Shaders/AABBVoxelShader";
 import Camera, { CameraContext } from "../Camera/Camera";
 import { AsContext } from "../Shared/DataUtil";
 import { ALL_CHUNK_SIDES_FILLED, Chunk, ChunkFillSide, ChunkFillSideDebugger, ChunkFillSideValue, ChunkIndex, ChunkProps, ChunkSideDirection, ChunkSideOpposing, ChunkSides, getChunkFilledSides, isChunkSideFilled } from "./Chunk";
@@ -15,6 +16,7 @@ import { createCubeDefinition } from "../Shapes/Cube";
 const cubeDef = createCubeDefinition(0.499);
 
 const voxelShader = createShader(SVOShader.source.Fragment, SVOShader.source.Vertex);
+const aabbVoxelShader = createShader(AABBVoxelShader.source.Fragment, AABBVoxelShader.source.Vertex);
 
 export interface GenerationContext {
     resolution : number;
@@ -44,8 +46,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.regl = regl;
 
         this.cmd = regl({
-            frag: voxelShader.source.Fragment,
-            vert: voxelShader.source.Vertex,
+            frag: aabbVoxelShader.source.Fragment,
+            vert: aabbVoxelShader.source.Vertex,
             attributes: {
                 vertex: cubeDef.vertex
             },

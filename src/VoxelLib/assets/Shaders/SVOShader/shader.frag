@@ -17,13 +17,14 @@ in vec3 worldPos;
 
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec4 position;
+layout (location = 2) out vec4 normal;
 
 #define MAX_STEPS 100
 #define VOLUME_SIZE 0.5
 
 struct Raycast {
     vec4 result;
-    vec3 position;
+    vec4 position;
 };
 
 bool isCameraIn() {
@@ -45,15 +46,19 @@ Raycast castRay(in vec3 origin, in vec3 stepDir) {
     for(int i = 0; i < MAX_STEPS; i ++ ) {
         vec4 currentSample = sampleTexture(pos);
         if (currentSample.a > 0.0) {
+            vec3 worldHitPos = (pos - offset) * VOLUME_SIZE;
+
+            float distanceToHit = distance(pos, -cameraPosition / cameraScale);
+
             return Raycast(
                 currentSample,
-                pos
+                vec4(worldHitPos, distanceToHit)
             );
         }
         pos += stepDir;
     }
     
-    return Raycast(vec4(0), vec3(-1));
+    return Raycast(vec4(0), vec4(-1));
 }
 
 vec3 getOrigin() {
@@ -63,13 +68,21 @@ vec3 getOrigin() {
 
 void main() {
     vec3 dir = normalize(worldPos + cameraPosition);
-    vec3 stepDir = dir / size;
+    vec3 stepDir = dir / (sqrt(size * size * 2.));
     vec3 origin = getOrigin();
     
     Raycast castResult = castRay(origin, stepDir);
 
+    vec3 camRelPos = castResult.position.xyz - (cameraPosition / cameraScale);
+    vec3 norm = normalize(cross(
+        dFdx(camRelPos),
+        dFdy(camRelPos)
+    ));
+
+    normal = vec4(norm, 1.);
+
     if (castResult.position.x == -1.0) discard;
-    castResult.position = (castResult.position - offset) / VOLUME_SIZE;
     color = castResult.result;
-    position = vec4(castResult.position, distance(castResult.position, -cameraPosition / cameraScale));
+    // normal = vec4(norm, 1);
+    position = castResult.position;
 }

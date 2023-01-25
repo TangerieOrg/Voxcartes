@@ -1,23 +1,8 @@
-import CopyFBOShader from "@VoxelLib/assets/Shaders/FBO/CopyFBO";
 import { ShaderSource } from "@VoxelLib/Shader/Shader";
 import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { vec2 } from "gl-matrix";
-import { CommandBodyFn, DefaultContext, DrawCommand, Framebuffer2D, MaybeDynamicUniforms, Regl, Texture2D, Uniforms } from "regl";
-
-const createCopyCommand = (regl: Regl) => regl({
-    frag: CopyFBOShader.Fragment,
-    vert: CopyFBOShader.Vertex,
-    uniforms: {
-        tex: regl.prop<{ tex: Texture2D }>("tex")
-    },
-    attributes: {
-        vertex: FullscreenQuad.vertex
-    },
-    count: FullscreenQuad.count
-})
-
-let cpy: DrawCommand;
+import { DefaultContext, DrawCommand, Framebuffer2D, MaybeDynamicUniforms, Regl, Texture2D } from "regl";
 
 let tmp: any;
 
@@ -69,12 +54,11 @@ export default class PostProcessingPipeline {
         this.drawEffect = this.regl({
             uniforms: unpackObjectToDot({
                 post: {
-                    albedo: () => this.next
+                    albedo: () => this.next,
+                    resolution: () => this._texSize
                 }
             })
         });
-
-        cpy = createCopyCommand(this.regl);
     }
 
     add(...cmds : DrawCommand[]) {

@@ -57,6 +57,7 @@ export default class GameScene extends Scene {
 
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
+        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {

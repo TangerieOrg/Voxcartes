@@ -1,5 +1,6 @@
 struct PostProcessing {
     sampler2D albedo;
+    vec2 resolution;
 };
 
 out vec4 color;

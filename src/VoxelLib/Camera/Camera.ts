@@ -1,5 +1,6 @@
+import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { mat4, vec3, quat } from "gl-matrix";
-import REGL, { Regl } from "regl";
+import REGL, { DrawCommand, Regl } from "regl";
 import InputManager from "../InputManager/InputManager";
 import { AsContext, deg2rad } from "../Shared/DataUtil";
 import ObjectTransform from "../Shared/Object";
@@ -29,11 +30,30 @@ export default class Camera extends ObjectTransform {
 
     private isDirty = false;
 
+    use : DrawCommand;
+
     constructor(regl : Regl) {
         super();
         this.regl = regl;
         this.updateCameraMatrix();
         window.addEventListener("resize", () => this.updateCameraMatrix());
+
+        const uniforms = unpackObjectToDot({
+            camera: {
+                view: () => this.viewMatrix,
+                projection: () => this.projectionMatrix,
+                viewProjection: () => this.viewProjectionMatrix,
+                position: () => this.position,
+                rotation: () => this.rotation,
+                scale: () => this.scale,
+                fov: () => this.fov,
+                zPlanes: () => [this.zNear, this.zFar]
+            }
+        });
+
+        this.use = this.regl({
+            uniforms
+        });
     }
 
     getAspect() {

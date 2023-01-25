@@ -5,7 +5,6 @@ import { CHUNK_SIZE } from "./contants";
 import { createEmptyChunk, positionToChunkPosition, positionToIndex, positionToStartIndexInChunk } from "./GeoUtil";
 
 import { createShader } from "../Shader/ShaderUtil";
-import SVOShader from "../assets/Shaders/SVOShader";
 import AABBVoxelShader from "../assets/Shaders/AABBVoxelShader";
 import Camera, { CameraContext } from "../Camera/Camera";
 import { AsContext } from "../Shared/DataUtil";
@@ -15,7 +14,6 @@ import { createCubeDefinition } from "../Shapes/Cube";
 
 const cubeDef = createCubeDefinition(0.499);
 
-const voxelShader = createShader(SVOShader.source.Fragment, SVOShader.source.Vertex);
 const aabbVoxelShader = createShader(AABBVoxelShader.source.Fragment, AABBVoxelShader.source.Vertex);
 
 export interface GenerationContext {
@@ -46,8 +44,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.regl = regl;
 
         this.cmd = regl({
-            frag: aabbVoxelShader.source.Fragment,
-            vert: aabbVoxelShader.source.Vertex,
+            frag: aabbVoxelShader.Fragment,
+            vert: aabbVoxelShader.Vertex,
             attributes: {
                 vertex: cubeDef.vertex
             },
@@ -139,7 +137,9 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         
     }
 
-    popQueue() { this.queue.pop()?.(); }
+    popQueue() {
+        this.queue.pop()?.();
+    }
 
     private updateChunk(chunk : Chunk) {
         // Change to only update relevant parts

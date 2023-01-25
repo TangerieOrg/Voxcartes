@@ -1,0 +1,1 @@
+color = texture(albedo, uv);

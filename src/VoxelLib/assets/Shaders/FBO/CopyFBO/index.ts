@@ -2,6 +2,6 @@ import Fragment from "./shader.frag";
 import { createPostProcessingShader } from "@VoxelLib/Renderer/RenderUtil";
 
 
-const SampleFBOShader = createPostProcessingShader(Fragment);
+const CopyFBOShader = createPostProcessingShader(Fragment);
 
-export default SampleFBOShader;
+export default CopyFBOShader;

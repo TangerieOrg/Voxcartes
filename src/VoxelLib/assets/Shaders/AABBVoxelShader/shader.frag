@@ -4,10 +4,10 @@ precision highp float;
 precision highp int;
 precision highp sampler3D;
 
+// #include<CameraUniforms>
+
 uniform sampler3D tex;
 
-uniform vec3 cameraPosition;
-uniform vec3 cameraScale;
 uniform int size;
 uniform vec3 offset;
 
@@ -16,8 +16,7 @@ in vec3 screenPos;
 in vec3 worldPos;
 
 layout (location = 0) out vec4 color;
-layout (location = 1) out vec4 position;
-layout (location = 2) out vec4 normal;
+layout (location = 1) out vec4 normal;
 
 #define VOLUME_SIZE 0.5
 
@@ -28,7 +27,7 @@ struct Raycast {
 };
 
 bool isCameraIn() {
-    vec3 cameraPosOffset = (cameraPosition / cameraScale) - offset;
+    vec3 cameraPosOffset = (camera.position / camera.scale) - offset;
     return
     (cameraPosOffset.z < VOLUME_SIZE && cameraPosOffset.z > -VOLUME_SIZE)&&
     (cameraPosOffset.y < VOLUME_SIZE && cameraPosOffset.y > -VOLUME_SIZE)&&
@@ -36,7 +35,7 @@ bool isCameraIn() {
 }
 
 vec3 getOrigin() {
-    if (isCameraIn()) return -cameraPosition / cameraScale + VOLUME_SIZE + offset;
+    if (isCameraIn()) return -camera.position / camera.scale + VOLUME_SIZE + offset;
     return vPos + VOLUME_SIZE;
 }
 
@@ -92,13 +91,17 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
 
 void main() {
     vec3 origin = getOrigin() * float(size);
-    vec3 dir = normalize(worldPos + cameraPosition);
+
+    if(distance(worldPos, -camera.position) > camera.zPlanes.y) discard;
+
+    vec3 dir = normalize(worldPos + camera.position);
     Raycast res = castRay(origin, dir);
 
     if(res.result.a == 0.0) discard;
-
-    normal = vec4(res.normal, 1.);
+    vec3 position = ((res.position / float(size)) - offset) * VOLUME_SIZE;
+    normal = vec4(
+        res.normal, 
+        distance(-camera.position / camera.scale, position)
+    );
     color = vec4(res.result.xyz, 1.);
-    // normal = vec4(norm, 1);
-    position = vec4(1);
 }

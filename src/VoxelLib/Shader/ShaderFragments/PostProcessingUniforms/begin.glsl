@@ -1,3 +1,7 @@
+struct PostProcessing {
+    sampler2D albedo;
+};
+
 out vec4 color;
 in vec2 uv;
-uniform sampler2D albedo;
+uniform PostProcessing post;

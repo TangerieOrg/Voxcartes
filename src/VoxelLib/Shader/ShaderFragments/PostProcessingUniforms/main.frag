@@ -1,1 +1,1 @@
-color = texture(albedo, uv);
+color = texture(post.albedo, uv);

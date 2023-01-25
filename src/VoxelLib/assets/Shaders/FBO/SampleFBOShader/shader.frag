@@ -7,23 +7,25 @@ precision highp sampler2D;
 // #include<CameraUniforms>
 // #include<Fog>
 // #include<FBOUniforms>
+// #include<Common>
+// #include<Lights>
 
 in vec2 uv;
 
-uniform vec3 lightPos;
+uniform DirectionalLight sun;
 
 out vec4 color;
 
 void main() {
-    ivec2 textureCoord = ivec2(round(uv * fbo.resolution));
-    vec3 albedo = texelFetch(fbo.albedo, textureCoord, 0).rgb;
-    vec4 normal = texelFetch(fbo.normal, textureCoord, 0);
+    vec3 albedo = texture(fbo.albedo, uv).rgb;
+    vec4 normal = texture(fbo.normal, uv);
+    gl_FragDepth = toFragDepth(normal.w, camera.zPlanes);
+    if(gl_FragDepth > 1.0) discard;
     
+    color = vec4(albedo, 1);
+
     // Lighting
-    
-    float lightInfluence = dot(normal.xyz, normalize(lightPos)) + 0.5;
-    
-    color = vec4(albedo * lightInfluence, 1);
+    color.rgb *= calculateDirectionalLight(normal.xyz, sun);
     
     // Fog
     

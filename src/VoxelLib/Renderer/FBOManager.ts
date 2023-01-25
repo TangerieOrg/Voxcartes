@@ -21,7 +21,8 @@ export default class FBOManager {
         this.regl = regl;
         this.targets = targets;
         this.fbo = this.regl.framebuffer({
-            colors: this.targets
+            colors: this.targets,
+            depth: true,
         });
 
         this.drawFBO = this.regl({

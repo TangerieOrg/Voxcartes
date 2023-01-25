@@ -10,7 +10,7 @@ import { CameraContext } from "@VoxelLib/Camera/Camera";
 import { vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
-import ACESTonemapping from "@VoxelLib/assets/Shaders/PostProcessing/ACES";
+import { DirectionalLight } from "@VoxelLib/Lighting/Lights";
 
 
 const stats = new Stats();
@@ -19,7 +19,7 @@ document.body.appendChild(stats.dom);
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
 
 const lightPos: vec3 = vec3.create();
-vec3.set(lightPos, 0, 1, 1);
+vec3.set(lightPos, 0, -1, 1);
 
 export default class Renderer {
     private regl: Regl;
@@ -44,35 +44,32 @@ export default class Renderer {
 
         this.fboManager = new FBOManager(this.regl, [
             regl.texture({ type: 'float' }), // Color
-            regl.texture({ type: 'float' }), // Normal
+            regl.texture({ type: 'float' }), // Normal (& distance)
         ]);
 
         this.renderContext = regl({
             uniforms: unpackObjectToDot({
                 fog: {
-                    size: () => [7, 20],
+                    size: () => [5, 15],
                     albedo: () => [0, 0, 0]
+                },
+                fbo: {
+                    albedo: () => this.fboManager.get(0),
+                    normal: () => this.fboManager.get(1),
+                    resolution: () => this.fboManager.texSize
+                },
+                sun: {
+                    direction: () => lightPos,
+                    albedo: () => [1, 1, 1],
+                    intensity: () => 1
                 }
             })
         });
-
-
-        const fboUniforms = unpackObjectToDot({
-            fbo: {
-                albedo: () => this.fboManager.get(0),
-                normal: () => this.fboManager.get(1),
-                resolution: () => this.fboManager.texSize
-            }
-        })
 
         // A full screen quad that renders the results of the FBO
         this.renderFBO = regl({
             frag: SampleFBOShader.Fragment,
             vert: SampleFBOShader.Vertex,
-            uniforms: {
-                ...fboUniforms,
-                lightPos: () => lightPos
-            },
             attributes: {
                 vertex: FullscreenQuad.vertex
             },
@@ -81,7 +78,6 @@ export default class Renderer {
 
 
         this.postProcessing = new PostProcessingPipeline(regl);
-        this.postProcessing.addFromSource(ACESTonemapping);
     }
 
     start() {

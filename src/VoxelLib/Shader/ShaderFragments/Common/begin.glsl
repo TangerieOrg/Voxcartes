@@ -1,0 +1,11 @@
+// float map(float value, float min1, float max1, float min2, float max2) {
+//     return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+// }
+
+float toFragDepth(const float value, const vec2 zPlanes) {
+    return (value - zPlanes.x) / zPlanes.y;
+}
+
+float fromFragDepth(const float value, const vec2 zPlanes) {
+    return value * zPlanes.y + zPlanes.x;
+}

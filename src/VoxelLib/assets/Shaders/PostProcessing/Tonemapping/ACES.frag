@@ -17,6 +17,5 @@ vec3 aces(vec3 x) {
 }
 
 void main() {
-    
     color.rgb = aces(color.rgb);
 }

@@ -1,6 +1,7 @@
 import CopyFBOShader from "@VoxelLib/assets/Shaders/FBO/CopyFBO";
 import { ShaderSource } from "@VoxelLib/Shader/Shader";
 import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
+import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { vec2 } from "gl-matrix";
 import { CommandBodyFn, DefaultContext, DrawCommand, Framebuffer2D, MaybeDynamicUniforms, Regl, Texture2D, Uniforms } from "regl";
 
@@ -63,11 +64,14 @@ export default class PostProcessingPipeline {
         this.nextFbo = this.fboB;
 
 
+
         // Take in current, render to next
         this.drawEffect = this.regl({
-            uniforms: {
-                albedo: () => this.next
-            }
+            uniforms: unpackObjectToDot({
+                post: {
+                    albedo: () => this.next
+                }
+            })
         });
 
         cpy = createCopyCommand(this.regl);
@@ -87,6 +91,10 @@ export default class PostProcessingPipeline {
             count: FullscreenQuad.count,
             uniforms
         }));
+    }
+
+    remove(...cmds : DrawCommand[]) {
+        this.passes = this.passes.filter(x => !cmds.includes(x));
     }
 
     resize(width: number, height: number) {

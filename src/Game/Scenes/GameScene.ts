@@ -2,6 +2,7 @@ import REGL from "regl";
 import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { VoxelSampleFunction } from "@VoxelLib/World/World";
 import Scene from "@VoxelLib/Scene";
+import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
 
 export default class GameScene extends Scene {
     onLoad(): void {
@@ -54,6 +55,8 @@ export default class GameScene extends Scene {
         this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
         this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
 
+        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
+        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {

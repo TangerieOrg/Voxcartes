@@ -132,7 +132,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         }
 
         queue.sort(([_, a], [__, b]) => {
-            return -vec3.sqrLen(a) + vec3.sqrLen(b);
+            return vec3.distance([4, 4, 0], b) - vec3.distance([4, 4, 0], a);
         })
 
         this.queue.push(...queue.map(x => x[0]));

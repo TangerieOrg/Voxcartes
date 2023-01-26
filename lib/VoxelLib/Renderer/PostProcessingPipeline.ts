@@ -23,7 +23,7 @@ export default class PostProcessingPipeline {
     private current: Texture2D;
     private next: Texture2D;
 
-    private drawEffect: DrawCommand;
+    public drawEffect: DrawCommand;
 
     private _texSize: vec2 = vec2.fromValues(1, 1);
     public get texSize() { return this._texSize };

@@ -44,9 +44,12 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
     tMaxZ = tDelta.z * ((dir.z>0.0) ? (1.0 - fr.z) : fr.z);
 
     vec3 norm;
-    const int maxTrace = 100;
+    const int maxTrace = 89;
 
     for (int i = 0; i < maxTrace; i++) {
+        if(pos.x < 0.0 || pos.y < 0.0 || pos.z < 0.0 || pos.x > float(size) || pos.y > float(size) || pos.z > float(size)) {
+            return Raycast(vec4(0), vec3(-1), vec3(-1));
+        }
         vec4 h = texelFetch(tex, ivec3(pos), 0);
         if (h.a > 0.0) {
             return Raycast(h, pos, norm);

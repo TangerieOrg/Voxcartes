@@ -8,7 +8,7 @@ export default class GameScene extends Scene {
     onLoad(): void {
         this.camera.setPosition([0, -8, 16]);
         this.camera.rotate([0, Math.PI, 0]);
-        this.camera.setScale([4, 4, 4]);
+        this.camera.setScale([2, 2, 2]);
 
         const NOISE_SCALE = 100;
 

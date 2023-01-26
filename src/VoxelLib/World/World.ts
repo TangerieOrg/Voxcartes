@@ -22,6 +22,8 @@ export interface GenerationContext {
 
 export type VoxelSampleFunction = (pos : vec3, context : GenerationContext) => vec4;
 
+let cPos : vec3 = vec3.create();
+
 export default class World<RContext extends REGL.DefaultContext & AsContext<CameraContext> = any, RProps extends {} = any> {
     chunks : Map<ChunkIndex, Chunk> = new Map();
 
@@ -280,7 +282,13 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     render(camera : Camera) {
         this.currentChunk = positionToIndex(this.getCurrentChunkPos(camera));
-        this.cmd(this.batches);
+        this.cmd(this.batches.filter(
+            x => 
+            vec3.distance(
+                x.offset, 
+                vec3.scale(cPos, camera.getPosition(), 1/camera.getScale()[0]) 
+            ) < 12)
+        );
     }
 
 
@@ -290,5 +298,13 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         for(const c of this.batches) {
             this._numVoxels += c.size**3;
         }
+    }
+
+    startGenerationQueue() {
+        const callback = () => {
+            if(this.queue.length > 1) requestIdleCallback(() => callback());
+            this.popQueue();
+        }
+        callback();
     }
 }

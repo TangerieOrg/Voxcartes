@@ -50,18 +50,18 @@ export default class Renderer {
         this.renderContext = regl({
             uniforms: unpackObjectToDot({
                 fog: {
-                    size: () => [5, 15],
-                    albedo: () => [0, 0, 0]
+                    size: [5, 12],
+                    albedo: [0, 0, 0]
                 },
                 fbo: {
-                    albedo: () => this.fboManager.get(0),
-                    normal: () => this.fboManager.get(1),
+                    albedo: this.fboManager.get(0),
+                    normal: this.fboManager.get(1),
                     resolution: () => this.fboManager.texSize
                 },
                 sun: {
                     direction: () => lightPos,
-                    albedo: () => [1, 1, 1],
-                    intensity: () => 1
+                    albedo: [1, 1, 1],
+                    intensity: 1
                 }
             })
         });

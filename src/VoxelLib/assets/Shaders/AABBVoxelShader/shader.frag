@@ -20,7 +20,7 @@ void main() {
     Raycast res = castRay(origin, dir);
 
     if(res.result.a == 0.0) discard;
-    vec3 position = ((res.position / float(size)) - offset) * VOLUME_SIZE;
+    vec3 position = ((res.position / float(size)) - offset);
     normal = vec4(
         normalize(res.normal), 
         distance(-camera.position / camera.scale, position)

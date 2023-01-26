@@ -43,11 +43,11 @@ export default class GameScene extends Scene {
             ]
         }
 
-        this.world.createGenerationQueue([0, 0, 0], [12, 8, 12], holeSample, 32);
+        // this.world.createGenerationQueue([0, 0, 0], [12, 8, 12], holeSample, 32);
 
-        // this.world.createGenerationQueue([0, 1, 0], [16, 3, 16], voxSample, 32);
+        this.world.createGenerationQueue([0, 1, 0], [16, 3, 16], voxSample, 32);
 
-        // this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 8);
+        this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 8);
 
 
         this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
@@ -56,12 +56,14 @@ export default class GameScene extends Scene {
         this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
 
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
+        // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
+        // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
+
+        this.world.startGenerationQueue();
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {
-        this.world.popQueue();
+        // this.world.popQueue();
         this.world.render(this.camera);
     }
 }

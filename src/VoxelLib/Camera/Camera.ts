@@ -19,7 +19,7 @@ export default class Camera extends ObjectTransform {
 
     fov : number = 75;
     zNear : number = 0.0001;
-    zFar : number = 100;
+    zFar : number = 40;
 
     projectionMatrix : mat4 = mat4.create();
     viewMatrix : mat4 = mat4.create();

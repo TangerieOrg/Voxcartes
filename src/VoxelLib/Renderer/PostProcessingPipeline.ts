@@ -89,17 +89,18 @@ export default class PostProcessingPipeline {
 
     // Draw passed command to the first framebuffer, then do post processing passes
     use(cmd: () => any) {
-        if(this.passes.length > 0) {
-            this.currentFbo.use(() => {
-                this.regl.clear({
-                    color: [0, 0, 0, 0],
-                    depth: 1
-                })
-                cmd();
-            });
-        } else {
+        if(this.passes.length === 0) {
             cmd();
+            return;
         }
+        this.currentFbo.use(() => {
+            this.regl.clear({
+                color: [0, 0, 0, 0],
+                depth: 1
+            })
+            cmd();
+        });
+        
 
         for (let i = 0; i < this.passes.length - 1; i++) {
             this.pingpong();

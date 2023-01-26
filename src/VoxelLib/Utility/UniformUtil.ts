@@ -3,7 +3,7 @@ export const unpackObjectToDot = (input: Record<string, any>, parentKey?: string
     const outputKey = parentKey ? `${parentKey}.${key}` : `${key}`;
 
     // NOTE: remove `&& (!Array.isArray(value) || value.length)` to exclude empty arrays from the output
-    if (value && typeof value === 'object' && (!Array.isArray(value) || value.length)) return ({ ...acc, ...unpackObjectToDot(value, outputKey) });
+    if (value && typeof value === 'object' && (!Array.isArray(value))) return ({ ...acc, ...unpackObjectToDot(value, outputKey) });
 
     return ({ ...acc, [outputKey]: value });
 }, {});

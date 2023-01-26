@@ -282,6 +282,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     render(camera : Camera) {
         this.currentChunk = positionToIndex(this.getCurrentChunkPos(camera));
+        // console.log(this.cmd.stats);
         this.cmd(this.batches.filter(
             x => 
             vec3.distance(

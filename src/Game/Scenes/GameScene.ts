@@ -1,8 +1,9 @@
-import REGL from "regl";
+import REGL, { CommandStats, DrawCommand } from "regl";
 import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { VoxelSampleFunction } from "@VoxelLib/World/World";
 import Scene from "@VoxelLib/Scene";
 import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
+import SceneManager from "@VoxelLib/Scene/SceneManager";
 
 export default class GameScene extends Scene {
     onLoad(): void {
@@ -50,10 +51,28 @@ export default class GameScene extends Scene {
         this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 8);
 
 
-        this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
-        this.renderer.debug.set("Num Voxels", () => this.world.numVoxels);
-        this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
-        this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
+        // this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
+        // this.renderer.debug.set("Num Voxels", () => this.world.numVoxels);
+        // this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
+        // this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
+
+        const cmds : [string, DrawCommand][] = [
+            ["Chunk", this.world.cmd],
+            ["Lighting", this.renderer.renderFBO]
+        ];
+
+        if(SceneManager.isDebug) {
+            for(const [name, cmd] of cmds) {
+                this.renderer.debug.trackDifference(`[${name}] GPU`, () => cmd.stats.gpuTime, "ms/frame");
+                this.renderer.debug.trackDifference(`[${name}] CPU`, () => cmd.stats.cpuTime, "ms/frame");
+                this.renderer.debug.trackDifference(`[${name}] Count`, () => cmd.stats.count, "call/frame");
+            }
+        }
+
+        // this.renderer.debug.trackDifference("GPU", () => this.world.cmd.stats.gpuTime);
+        // this.renderer.debug.trackDifference("CPU", () => this.world.cmd.stats.cpuTime);
+
+        // this.renderer.debug.setObject(this.world.cmd.stats);
 
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);

@@ -10,7 +10,6 @@ import { CameraContext } from "@VoxelLib/Camera/Camera";
 import { vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
-import { DirectionalLight } from "@VoxelLib/Lighting/Lights";
 
 
 const stats = new Stats();
@@ -30,7 +29,7 @@ export default class Renderer {
 
     public debug = new DebugUI();
 
-    private renderFBO: DrawCommand;
+    public renderFBO: DrawCommand;
 
     public fboManager: FBOManager;
 
@@ -39,6 +38,7 @@ export default class Renderer {
     public postProcessing : PostProcessingPipeline;
 
     constructor(regl: Regl, camera: Camera) {
+
         this.regl = regl;
         this.camera = camera;
 

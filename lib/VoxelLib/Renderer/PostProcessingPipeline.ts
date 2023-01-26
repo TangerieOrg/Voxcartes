@@ -96,7 +96,7 @@ export default class PostProcessingPipeline {
         this.currentFbo.use(() => {
             this.regl.clear({
                 color: [0, 0, 0, 0],
-                depth: 1
+                depth: 1,
             })
             cmd();
         });

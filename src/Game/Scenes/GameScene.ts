@@ -56,8 +56,8 @@ export default class GameScene extends Scene {
         this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
 
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
+        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
         // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
-        // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
 
         this.world.startGenerationQueue();
     }

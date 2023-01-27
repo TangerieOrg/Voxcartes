@@ -17,7 +17,7 @@ export default class Scene {
         this.regl = regl;
         this.camera = new Camera(this.regl);
         this.renderer = new Renderer(this.regl, this.camera);
-        this.world = new World(regl);
+        this.world = new World(this);
     }
 
     onLoad() {}

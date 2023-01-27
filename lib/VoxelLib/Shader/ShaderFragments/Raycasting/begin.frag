@@ -3,6 +3,7 @@ uniform sampler3D tex;
 
 uniform int size;
 uniform vec3 offset;
+uniform int lod;
 
 in vec3 vPos;
 in vec3 screenPos;
@@ -39,6 +40,8 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
 
     vec3 fr = fract(origin);
 
+    float lodMult = 1.0 / pow(2.0, float(lod));
+
     tMaxX = tDelta.x * ((dir.x>0.0) ? (1.0 - fr.x) : fr.x);
     tMaxY = tDelta.y * ((dir.y>0.0) ? (1.0 - fr.y) : fr.y);
     tMaxZ = tDelta.z * ((dir.z>0.0) ? (1.0 - fr.z) : fr.z);
@@ -50,7 +53,7 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
         if(pos.x < 0.0 || pos.y < 0.0 || pos.z < 0.0 || pos.x > float(size) || pos.y > float(size) || pos.z > float(size)) {
             return Raycast(vec4(0), vec3(-1), vec3(-1));
         }
-        vec4 h = texelFetch(tex, ivec3(pos), 0);
+        vec4 h = texelFetch(tex, ivec3(pos * lodMult), lod);
         if (h.a > 0.0) {
             return Raycast(h, pos, norm);
         }

@@ -3,6 +3,7 @@ import { Texture3D } from "regl";
 import ObjectTransform from "../Shared/Object";
 import { BitflagDebugger, BitflagMaxValue } from "../Utility/EnumUtil";
 import { NUM_CHANNELS } from "./contants";
+import { createEmptyChunk, positionToStartIndexInChunk } from "./GeoUtil";
 
 
 export interface ChunkProps {
@@ -11,6 +12,7 @@ export interface ChunkProps {
     size: number;
     offset: vec3;
     index: number;
+    lod : number;
 }
 
 
@@ -148,4 +150,40 @@ export function getChunkFilledSides(chunk : Chunk) : number {
 
 
     return filled;
+}
+
+export function generateChunkLods(chunk : Chunk, numLods : number) {
+    const lods : Uint8Array[] = [];
+
+    let curRes = chunk.resolution;
+    let lastLod = chunk.data;
+    for(let i = 0; i < numLods; i++) {
+        lods.push(generateLod(lastLod, curRes));
+        curRes /= 2;
+        lastLod = lods[i];
+    }
+
+    return lods;
+}
+
+// Generates next lod down
+export function generateLod(input : Uint8Array, resolution : number) {
+    const newRes = resolution / 2;
+    const out = createEmptyChunk(newRes);
+
+    let index = 0;
+
+    
+
+    for(let z = 0; z < newRes; z++) {
+        for(let y = 0; y < newRes; y++) {
+            for(let x = 0; x < newRes; x++) {
+                const start = positionToStartIndexInChunk([x * 2, y * 2, z * 2], resolution);
+                out.set(input.subarray(start, start + 4), index)
+                index += 4;
+            }
+        }
+    }
+
+    return out;
 }

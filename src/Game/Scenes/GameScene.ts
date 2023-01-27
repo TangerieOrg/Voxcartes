@@ -8,7 +8,7 @@ import { vec3 } from "gl-matrix";
 
 export default class GameScene extends Scene {
     onLoad(): void {
-        this.camera.setPosition([-8, -8, 8]);
+        this.camera.setPosition([-8, -8, 4]);
         this.camera.rotate([0, Math.PI, 0]);
         this.camera.setScale([2, 2, 2]);
 
@@ -45,7 +45,7 @@ export default class GameScene extends Scene {
             ]
         }
 
-        const RADIUS = 100;
+        const RADIUS = 128;
         const CENTER = vec3.fromValues(32 * 4, 32 * 4, 32 * 4);
         const sphereSample : VoxelSampleFunction = ([x, y, z], context) => {
             const distance = vec3.distance(CENTER, [x, y, z]);
@@ -62,7 +62,7 @@ export default class GameScene extends Scene {
 
         // this.world.createGenerationQueue([0, 1, 0], [16, 3, 16], voxSample, 32);
 
-        // this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 8);
+        // this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 32);
 
         this.world.createGenerationQueue([0, 0, 0], [8, 8, 8], sphereSample, 32);
 

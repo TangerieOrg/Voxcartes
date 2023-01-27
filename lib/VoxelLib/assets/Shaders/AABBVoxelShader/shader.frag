@@ -12,6 +12,8 @@ layout (location = 1) out vec4 normal;
 
 
 void main() {
+    float lodMult = 1.0 / pow(2.0, float(lod));
+    float lodSize = float(size) * lodMult;
     vec3 origin = getOrigin() * float(size);
 
     if(distance(worldPos, -camera.position) > camera.zPlanes.y) discard;

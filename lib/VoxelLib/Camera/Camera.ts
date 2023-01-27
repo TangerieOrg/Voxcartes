@@ -1,5 +1,7 @@
+import EventEmitter from "@VoxelLib/Utility/EventEmitter";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { mat4, vec3, quat } from "gl-matrix";
+import { throttle } from "lodash";
 import REGL, { DrawCommand, Regl } from "regl";
 import InputManager from "../InputManager/InputManager";
 import { AsContext, deg2rad } from "../Shared/DataUtil";
@@ -13,6 +15,10 @@ export interface CameraContext {
     cameraRotation : () => quat;
     cameraScale : () => vec3;
 }
+
+export type CameraEventMap = {
+    "move": [position : vec3]
+};
 
 export default class Camera extends ObjectTransform {
     regl : Regl;
@@ -31,6 +37,10 @@ export default class Camera extends ObjectTransform {
     private isDirty = false;
 
     use : DrawCommand;
+
+    emitter : EventEmitter<CameraEventMap> = new EventEmitter();
+
+    private emitOnMove : () => any;
 
     constructor(regl : Regl) {
         super();
@@ -54,6 +64,10 @@ export default class Camera extends ObjectTransform {
         this.use = this.regl({
             uniforms
         });
+
+        this.emitOnMove = throttle(() => {
+            this.emitter.emit("move", this.position)
+        }, 100)
     }
 
     getAspect() {
@@ -128,6 +142,7 @@ export default class Camera extends ObjectTransform {
             vec3.add(this.position, this.position, dir);
             this.updateMatrices();
             this.isDirty = false;
+            this.emitOnMove();
         }
     }
 }

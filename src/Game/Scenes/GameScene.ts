@@ -16,30 +16,30 @@ export default class GameScene extends Scene {
 
         const noise2d = createNoise2D();
         const noise3d = createNoise3D();
-        const voxSample : VoxelSampleFunction = ([x, y, z], context) => {
-            const floorHeight = Math.pow((noise2d(x / NOISE_SCALE, z / NOISE_SCALE ) * 0.5 + 0.5), 2) * context.resolution * 1.5;
-            
+        const voxSample: VoxelSampleFunction = ([x, y, z], context) => {
+            const floorHeight = Math.pow((noise2d(x / NOISE_SCALE, z / NOISE_SCALE) * 0.5 + 0.5), 2) * context.resolution * 1.5;
+
             return [
-                (x / (context.resolution * 16)) * 255, 
-                (y / (context.resolution * 3)) * 255, 
-                (z / (context.resolution * 16)) * 255, 
+                (x / (context.resolution * 16)) * 255,
+                (y / (context.resolution * 3)) * 255,
+                (z / (context.resolution * 16)) * 255,
                 (y - context.resolution) < floorHeight ? 255 : 0
             ]
         }
-        const floorSample : VoxelSampleFunction = ([x, y, z], context) => {
+        const floorSample: VoxelSampleFunction = ([x, y, z], context) => {
             return [
-                (x / (context.resolution * 16)) * 255, 
-                (y / (context.resolution * 3)) * 255, 
-                (z / (context.resolution * 16)) * 255, 
+                (x / (context.resolution * 16)) * 255,
+                (y / (context.resolution * 3)) * 255,
+                (z / (context.resolution * 16)) * 255,
                 255
             ]
         }
 
-        const holeSample : VoxelSampleFunction = ([x, y, z], context) => {
+        const holeSample: VoxelSampleFunction = ([x, y, z], context) => {
             const s = noise3d(x / NOISE_SCALE, y / NOISE_SCALE, z / NOISE_SCALE) * 0.5 + 0.5;
             return [
-                (x / (context.resolution * 12)) * 255, 
-                (y / (context.resolution * 8)) * 255, 
+                (x / (context.resolution * 12)) * 255,
+                (y / (context.resolution * 8)) * 255,
                 (z / (context.resolution * 12)) * 255,
                 s > 0.5 ? 255 : 0
             ]
@@ -47,7 +47,7 @@ export default class GameScene extends Scene {
 
         const RADIUS = 128;
         const CENTER = vec3.fromValues(32 * 4, 32 * 4, 32 * 4);
-        const sphereSample : VoxelSampleFunction = ([x, y, z], context) => {
+        const sphereSample: VoxelSampleFunction = ([x, y, z], context) => {
             const distance = vec3.distance(CENTER, [x, y, z]);
             const s = noise3d(x / NOISE_SCALE / distance, y / NOISE_SCALE / distance, z / NOISE_SCALE / distance) * 0.5 + 0.5;
             return [
@@ -66,23 +66,25 @@ export default class GameScene extends Scene {
 
         this.world.createGenerationQueue([0, 0, 0], [8, 8, 8], sphereSample, 32);
 
-        // this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
-        // this.renderer.debug.set("Num Voxels", () => this.world.numVoxels);
-        // this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
-        // this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
 
-        const cmds : [string, DrawCommand][] = [
+
+        const cmds: [string, DrawCommand][] = [
             ["Chunk", this.world.cmd],
             ["Lighting", this.renderer.renderFBO],
             ["PostProcessing", this.renderer.postProcessing.drawEffect]
         ];
 
-        if(SceneManager.isDebug) {
-            for(const [name, cmd] of cmds) {
+        if (SceneManager.isDebug) {
+            for (const [name, cmd] of cmds) {
                 this.renderer.debug.trackDifference(`[${name}] GPU`, () => cmd.stats.gpuTime, "ms/frame");
                 this.renderer.debug.trackDifference(`[${name}] CPU`, () => cmd.stats.cpuTime, "ms/frame");
                 this.renderer.debug.trackDifference(`[${name}] Count`, () => cmd.stats.count, "call/frame");
             }
+        } else {
+            this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
+            this.renderer.debug.set("Num Voxels", () => this.world.numVoxels);
+            this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
+            this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
         }
 
         this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);

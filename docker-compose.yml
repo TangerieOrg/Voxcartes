@@ -6,7 +6,7 @@ services:
       - 8082:3000
     image: ${REG_NAME}/${REPO}:latest
     deploy:
-      replicas: 2
+      replicas: 1
 
 networks:
   app:

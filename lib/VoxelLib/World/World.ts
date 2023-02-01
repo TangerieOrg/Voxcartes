@@ -49,7 +49,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
     private _numChunks = 0;
     public get numChunks() { return this._numChunks };
 
-
+    private dirtyChunks : ChunkIndex[] = [];
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -84,12 +84,15 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         const posInChunk = vec3.clone(pos).map(x => x % resolution) as vec3;
         const startIndex = positionToStartIndexInChunk(posInChunk, resolution);
         chunk.data.set(value, startIndex);
+        const index = positionToIndex(chunkPosition);
 
         if (value[3] > 0) {
             chunk.isEmpty = false;
         }
 
-        if (update) this.updateChunk(chunk);
+        this.dirtyChunks.push(index);
+
+        // if (update) this.updateChunk(chunk);
         return this;
     }
 
@@ -117,7 +120,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
                 }
             }
         }
-        if (update) this.updateChunk(chunk);
+        this.dirtyChunks.push(positionToIndex(chunkPos));
+        // if (update) this.updateChunk(chunk);
         return this;
     }
 
@@ -154,6 +158,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     popQueue() {
         this.queue.pop()?.();
+    }
+
+    private updateDirtyChunks() {
+        this.dirtyChunks.forEach(x => this.updateChunk(this.chunks.get(x)!));
+        this.dirtyChunks.length = 0;
     }
 
     private updateChunk(chunk: Chunk) {
@@ -312,8 +321,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         for(const chunk of this.batches) {
             const distance = vec3.distance(chunk.offset, camPos);
             for(let index = 0; index < batchOffsets.length; index++) {
-                const bOffset = batchOffsets[index];
-                if(distance < bOffset) {
+                if(distance < batchOffsets[index]) {
                     this.batchViewDistances[index].push(chunk);
                     chunk.lod = index;
                     break;
@@ -329,10 +337,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         for(const b of this.batchViewDistances) {
             this.cmd(b);
         }
-        // this.cmd(this.batchViewDistances[0]);
-        // console.log(this.cmd.stats);
-        // this.cmd(
-        // );
+        this.updateDirtyChunks();
     }
 
 

@@ -1,4 +1,7 @@
+import { SceneMemberContext } from "@VoxelLib/Scene/Scene";
+import SceneMemberMixin from "@VoxelLib/Scene/SceneMemberMixin";
 import EventEmitter from "@VoxelLib/Utility/EventEmitter";
+import { applyMixins } from "@VoxelLib/Utility/Mixin";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { mat4, vec3, quat } from "gl-matrix";
 import { throttle } from "lodash";
@@ -20,9 +23,9 @@ export type CameraEventMap = {
     "move": [position : vec3]
 };
 
-export default class Camera extends ObjectTransform {
-    regl : Regl;
+export default interface Camera extends SceneMemberContext, ObjectTransform {}
 
+export default class Camera extends ObjectTransform {
     fov : number = 75;
     zNear : number = 0.0001;
     zFar : number = 40;
@@ -42,8 +45,9 @@ export default class Camera extends ObjectTransform {
 
     private emitOnMove : () => any;
 
-    constructor(regl : Regl) {
+    constructor({ scene, regl } : SceneMemberContext) {
         super();
+        this.scene = scene;
         this.regl = regl;
         this.updateCameraMatrix();
         window.addEventListener("resize", () => this.updateCameraMatrix());
@@ -60,7 +64,6 @@ export default class Camera extends ObjectTransform {
                 zPlanes: () => [this.zNear, this.zFar]
             }
         });
-
         this.use = this.regl({
             uniforms
         });
@@ -146,3 +149,5 @@ export default class Camera extends ObjectTransform {
         }
     }
 }
+
+applyMixins(Camera, SceneMemberMixin);

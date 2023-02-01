@@ -43,8 +43,8 @@ export default class FBOManager {
     }
 
     resize(width : number, height : number) {
-        vec2.set(this._texSize, width, height);
-        this.fbo?.resize(width, height);
+        vec2.set(this._texSize, width / 2, height / 2);
+        this.fbo?.resize(width / 2, height / 2);
     }
 
     use<C extends DefaultContext>(body : (ctxt : C) => any) {

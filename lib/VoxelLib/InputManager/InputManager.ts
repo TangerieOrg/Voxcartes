@@ -5,6 +5,18 @@ export type InputEventMap = {
     keydown: [key: string]
 };
 
+// Keys that aren't caught
+const SAVED_KEYS : string[] = (() => {
+    const keys : string[] = [];
+
+    for(let i = 1; i < 21; i++) {
+        keys.push(`f${i}`);
+    }
+
+    return keys;
+})();
+
+
 class _InputManager {
     private activeKeys : Set<string> = new Set();
 
@@ -16,8 +28,9 @@ class _InputManager {
         window.addEventListener("keydown", ev => {
             if(!this.active) return;
             if (ev.defaultPrevented) return;
-            ev.preventDefault()
             const key = ev.key.toLowerCase();
+            if(SAVED_KEYS.includes(key)) return;
+            ev.preventDefault();
             if(this.activeKeys.has(key)) return;
             this.activeKeys.add(key);
             this.emitter.emit("keydown", key);
@@ -26,8 +39,9 @@ class _InputManager {
         window.addEventListener("keyup", ev => {
             if(!this.active) return;
             if (ev.defaultPrevented) return;
-            ev.preventDefault();
             const key = ev.key.toLowerCase();
+            if(SAVED_KEYS.includes(key)) return;
+            ev.preventDefault();
             if(!this.activeKeys.has(key)) return;
             this.activeKeys.delete(key);
             this.emitter.emit("keyup", key);

@@ -4,6 +4,7 @@ uniform sampler3D tex;
 uniform int size;
 uniform vec3 offset;
 uniform int lod;
+uniform bool isCameraIn;
 
 in vec3 vPos;
 in vec3 screenPos;
@@ -17,16 +18,8 @@ struct Raycast {
     vec3 normal;
 };
 
-bool isCameraIn() {
-    vec3 cameraPosOffset = (camera.position / camera.scale) - offset;
-    return
-    (cameraPosOffset.z < VOLUME_SIZE && cameraPosOffset.z > -VOLUME_SIZE)&&
-    (cameraPosOffset.y < VOLUME_SIZE && cameraPosOffset.y > -VOLUME_SIZE)&&
-    (cameraPosOffset.x < VOLUME_SIZE && cameraPosOffset.x > -VOLUME_SIZE);
-}
-
 vec3 getOrigin() {
-    if (isCameraIn()) return -camera.position / camera.scale + VOLUME_SIZE + offset;
+    if (isCameraIn) return -camera.position / camera.scale + VOLUME_SIZE + offset;
     return vPos + VOLUME_SIZE;
 }
 

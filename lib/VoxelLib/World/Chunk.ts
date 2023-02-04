@@ -60,10 +60,8 @@ export interface Chunk {
     texture : Texture3D;
     transform : ObjectTransform;
     isEmpty : boolean;
-    isObscured : boolean;
     resolution: number;
     filled : number;
-    neighbourObscureFlag : number;
 }
 
 export const isChunkSideFilled = (chunk : Chunk, side : ChunkFillSide) => (chunk.filled & ChunkFillSideValue[side]) !== 0;

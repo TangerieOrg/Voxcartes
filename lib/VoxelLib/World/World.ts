@@ -39,7 +39,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     private batchViewDistances: ChunkProps[][] = [];
 
-    private currentChunk?: ChunkIndex;
+    public currentChunk: vec3 = vec3.create();
 
     public queue: (() => void)[] = [];
 
@@ -68,10 +68,13 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
                 size: this.regl.prop<ChunkProps>("size"),
                 offset: this.regl.prop<ChunkProps>("offset"),
                 lod: this.regl.prop<ChunkProps>("lod"),
+                isCameraIn: (ctxt, props : ChunkProps) => {
+                    return vec3.equals(this.currentChunk, props.offset)
+                }
             },
             cull: (ctxt, props: ChunkProps) => ({
                 enable: true,
-                face: props.index === this.currentChunk ? 'front' : 'back'
+                face: vec3.equals(this.currentChunk, props.offset) ? 'front' : 'back'
             })
         });
 
@@ -173,40 +176,11 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             chunk.texture.subimage(lod, 0, 0, 0, index + 1);
         })
 
-        const prevFill = chunk.filled;
         chunk.filled = getChunkFilledSides(chunk);
 
-        const chunkPosition = vec3.negate(vec3.create(), chunk.position);
-
-        // If fill changed, calculate neighbours
-        if (prevFill !== chunk.filled) {
-            let sideFill = 0;
-            let neighbour: Chunk | undefined;
-            let opposing: number;
-            const nPos = vec3.create();
-            for (const side of ChunkSides) {
-                vec3.add(nPos, chunkPosition, ChunkSideDirection[side]);
-                neighbour = this.getChunk(nPos);
-                sideFill = (ChunkFillSideValue[side] & chunk.filled);
-                opposing = ChunkFillSideValue[ChunkSideOpposing[side]];
-
-                // If neighbour empty or neighbour already has that side obscured
-                if (!neighbour) continue;
-
-                // if the side is now empty
-                if (sideFill === 0) neighbour.neighbourObscureFlag &= ~ChunkFillSideValue[side];
-                else neighbour.neighbourObscureFlag |= ChunkFillSideValue[side];
-                this.updateChunkFlags(neighbour);
-            }
-        }
 
         this.updateBatches();
     }
-
-    private updateChunkFlags(chunk: Chunk) {
-        chunk.isObscured = chunk.neighbourObscureFlag === ALL_CHUNK_SIDES_FILLED;
-    }
-
     getChunk(pos: vec3) {
         return this.chunks.get(positionToIndex(pos));
     }
@@ -237,11 +211,8 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
             transform: new ObjectTransform(),
             isEmpty: true,
             resolution,
-            filled: 0,
-            isObscured: false,
-            neighbourObscureFlag: this.calculateNeighbourObscure(chunkPos)
+            filled: 0
         }
-        v.isObscured = v.neighbourObscureFlag === ALL_CHUNK_SIDES_FILLED
         v.transform.setPosition(chunkPos);
         this.chunks.set(
             index,
@@ -249,44 +220,6 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         );
         this.updateBatches();
         return v;
-    }
-
-    calculateNeighbourObscure(pos: vec3): number {
-        let obFlag = 0;
-        const currentChunkPos = vec3.create();
-        let currentChunk: Chunk | undefined;
-
-        // Up
-        vec3.add(currentChunkPos, pos, [0, 1, 0]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Bottom")) obFlag += ChunkFillSideValue.Top;
-
-        // Down
-        vec3.add(currentChunkPos, pos, [0, -1, 0]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Top")) obFlag += ChunkFillSideValue.Bottom;
-
-        // Left
-        vec3.add(currentChunkPos, pos, [1, 0, 0]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Right")) obFlag += ChunkFillSideValue.Left;
-
-        // Right
-        vec3.add(currentChunkPos, pos, [-1, 0, 0]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Left")) obFlag += ChunkFillSideValue.Right;
-
-        // Front
-        vec3.add(currentChunkPos, pos, [0, 0, 1]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Back")) obFlag += ChunkFillSideValue.Front;
-
-        // Back
-        vec3.add(currentChunkPos, pos, [0, 0, -1]);
-        currentChunk = this.getChunk(currentChunkPos);
-        if (currentChunk && isChunkSideFilled(currentChunk, "Front")) obFlag += ChunkFillSideValue.Back;
-
-        return obFlag;
     }
 
 
@@ -333,7 +266,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
 
     render(camera: Camera) {
-        this.currentChunk = positionToIndex(this.getCurrentChunkPos(camera));
+        this.currentChunk = vec3.negate(this.currentChunk, this.getCurrentChunkPos(camera));
         for(const b of this.batchViewDistances) {
             this.cmd(b);
         }

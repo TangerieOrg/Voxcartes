@@ -13,6 +13,10 @@ export default class GameScene extends Scene {
         this.camera.rotate([0, Math.PI, 0]);
         this.camera.setScale([2, 2, 2]);
 
+        this.renderer.setConfig({
+            maxResolution: -1
+        })
+
         const NOISE_SCALE = 0.5;
 
         const noise2d = createNoise2D();
@@ -88,13 +92,10 @@ export default class GameScene extends Scene {
             this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
         }
 
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
-        // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
+        this.renderer.postProcessing.addByName("Tonemapping.ACES");
+        this.renderer.postProcessing.addByName("Effects.FXAA");
 
         this.world.startGenerationQueue();
-
-        DebugConsole.setActive(true);
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {

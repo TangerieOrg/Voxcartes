@@ -27,10 +27,5 @@ void main() {
     // Lighting
     color.rgb *= calculateDirectionalLight(normal.xyz, sun);
     
-    // Fog
-    
-    float fogAmount = smoothstep(fog.size.x, fog.size.y, normal.w);
-    color.rgb = mix(color.rgb, fog.albedo, fogAmount);
-    // color.rgb = vec3(gl_FragDepth);
-    // color.rgb = normal.rgb; 
+    color.rgb = calculateColorWithFog(color.rgb, normal.w);
 }

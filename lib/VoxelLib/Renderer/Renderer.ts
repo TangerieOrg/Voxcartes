@@ -96,25 +96,22 @@ export default class Renderer {
         this.config = defaultsDeep({}, config, DefaultRenderConfig);
     }
 
-    getRenderResolution({ viewportWidth: w, viewportHeight: h } : DefaultContext) : vec2 {
-        const aspect = w / h;
-        const maxW = this.config.maxResolution;
-        const maxH = this.config.maxResolution;
-        // If less
-        if(w < maxW && h < maxH) return [w, h];
-
-
-        if(h > w) return [maxW, w / aspect];
-        else return [h / aspect, maxH];
+    getRenderResolution({ viewportWidth: w, viewportHeight: h } : DefaultContext, res : vec2)  {
+        if(w < this.config.maxResolution) vec2.set(res, w, h);
+        else vec2.set(res, this.config.maxResolution, h/w * this.config.maxResolution);
     }
 
     start() {
-        let res;
+        let res : vec2 = vec2.create();
         this.regl.frame((ctxt) => {
-            res = this.getRenderResolution(ctxt);
             stats.begin();
             this.camera.handleInput();
-            this.fboManager.resize(res[0], res[1]);
+            if(this.config.maxResolution > 0) {
+                this.getRenderResolution(ctxt, res);
+                this.fboManager.resize(res[0], res[1]);
+            } else {
+                this.fboManager.resize(ctxt.viewportWidth, ctxt.viewportHeight);
+            }
             this.postProcessing.resize(ctxt.viewportWidth, ctxt.viewportHeight);
 
             this.camera.use(() => {

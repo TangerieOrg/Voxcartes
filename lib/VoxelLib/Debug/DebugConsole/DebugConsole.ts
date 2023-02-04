@@ -1,7 +1,7 @@
 import InputManager from "@VoxelLib/InputManager/InputManager";
 import ConsoleStyles from "./console.module.css";
 import minimist, { ParsedArgs } from "minimist";
-import EventEmitter from "@VoxelLib/Utility/EventEmitter";
+import { stringify } from "./util";
 const ACTIVE_KEY = "`";
 
 const ELS = {
@@ -16,7 +16,7 @@ ELS.container.appendChild(ELS.input);
 export interface Command {
     cmd : string;
     desc : string;
-    exec: (args : minimist.ParsedArgs) => string[] | string | void;
+    exec: (args : ParsedArgs) => any[] | any | void;
 }
 
 const DebugConsole = new (class DebugConsole {
@@ -41,7 +41,6 @@ const DebugConsole = new (class DebugConsole {
         ELS.input.addEventListener("keydown", ev => {
             if(ev.key === "Enter") {
                 const cmdString = ELS.input.value;
-                console.log("[COMMAND]", cmdString);
                 logLevel("cmd", cmdString);
                 ELS.input.value = "";
                 this.parseCommand(cmdString);
@@ -75,13 +74,17 @@ const DebugConsole = new (class DebugConsole {
         }
     }
 
-    private executeCommand(cmd : string, args : minimist.ParsedArgs) {
+    private executeCommand(cmd : string, args : ParsedArgs) {
         const txt = this.commands[cmd].exec(args);
         let text : string[];
         if(!txt) return;
         else if(typeof txt === "string") text = [txt];
         else text = txt;
-        this.log(...text);
+        this.log(...text.map(x => stringify(x)));
+    }
+
+    getCommands() {
+        return this.commands;
     }
 })();
 
@@ -89,21 +92,39 @@ DebugConsole.register({
     cmd: "help",
     desc: "This command",
     exec: (args) => {
-        return "Help: "
+        if(args._.length == 1 && args._[0].trim().length > 0) {
+            const cmd = DebugConsole.getCommands()[args._[0]];
+            if(!cmd) {
+                return `No command "${args._[0]}" exists`;
+            } else {
+                return `${cmd.cmd} - ${cmd.desc}`;
+            }
+        } else {
+            const output : any[] = [
+                "Commands"
+            ];
+    
+            for(const cmd of Object.values(DebugConsole.getCommands())) {
+                output.push(`\n${cmd.cmd} - ${cmd.desc}`);
+            }
+    
+            return output;
+        }
+
     }
 })
 
 export default DebugConsole;
 
-function stringify(arg : any) {
-    if(typeof arg === "string") return arg;
-    else if (typeof arg === "number") return arg.toFixed(2);
-    else return JSON.stringify(arg);
+const _log = console.log;
+console.log = function(){
+    DebugConsole.log(...arguments);
+    // @ts-ignore
+    _log.apply(console, arguments)
 }
 
 function logLevel(level : string, ...args : any[]) {
-    const str = args.map(x => stringify(x)).join(", ");
-    console.log(`[${level.toUpperCase()}]`, str);
+    const str = args.map(x => stringify(x)).join(" ");
     const el = ELS.text.appendChild(document.createElement("li"));
     el.innerText = str;
     el.classList.add(ConsoleStyles["debug-" + level])

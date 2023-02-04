@@ -10,8 +10,11 @@ class _InputManager {
 
     public readonly emitter : EventEmitter<InputEventMap> = new EventEmitter();
 
+    public active = true;
+
     constructor() {
         window.addEventListener("keydown", ev => {
+            if(!this.active) return;
             if (ev.defaultPrevented) return;
             ev.preventDefault()
             const key = ev.key.toLowerCase();
@@ -21,6 +24,7 @@ class _InputManager {
         });
 
         window.addEventListener("keyup", ev => {
+            if(!this.active) return;
             if (ev.defaultPrevented) return;
             ev.preventDefault();
             const key = ev.key.toLowerCase();

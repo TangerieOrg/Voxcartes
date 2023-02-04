@@ -7,13 +7,22 @@ import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import FBOManager from "./FBOManager";
 import { AsContext } from "@VoxelLib/Shared/DataUtil";
 import { CameraContext } from "@VoxelLib/Camera/Camera";
-import { vec3 } from "gl-matrix";
+import { vec2, vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
+import { defaultsDeep } from "lodash";
 
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
+
+export interface RenderConfig {
+    maxResolution: number;
+}
+
+const DefaultRenderConfig : RenderConfig = {
+    maxResolution: 1080
+}
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
 
@@ -37,7 +46,10 @@ export default class Renderer {
 
     public postProcessing : PostProcessingPipeline;
 
-    constructor(regl: Regl, camera: Camera) {
+    private config : RenderConfig;
+
+    constructor(regl: Regl, camera: Camera, config : Partial<RenderConfig> = {}) {
+        this.config = defaultsDeep({}, config, DefaultRenderConfig)
 
         this.regl = regl;
         this.camera = camera;
@@ -80,11 +92,29 @@ export default class Renderer {
         this.postProcessing = new PostProcessingPipeline(regl);
     }
 
+    setConfig(config : RenderConfig) {
+        this.config = defaultsDeep({}, config, DefaultRenderConfig);
+    }
+
+    getRenderResolution({ viewportWidth: w, viewportHeight: h } : DefaultContext) : vec2 {
+        const aspect = w / h;
+        const maxW = this.config.maxResolution;
+        const maxH = this.config.maxResolution;
+        // If less
+        if(w < maxW && h < maxH) return [w, h];
+
+
+        if(h > w) return [maxW, w / aspect];
+        else return [h / aspect, maxH];
+    }
+
     start() {
+        let res;
         this.regl.frame((ctxt) => {
+            res = this.getRenderResolution(ctxt);
             stats.begin();
             this.camera.handleInput();
-            this.fboManager.resize(ctxt.viewportWidth, ctxt.viewportHeight);
+            this.fboManager.resize(res[0], res[1]);
             this.postProcessing.resize(ctxt.viewportWidth, ctxt.viewportHeight);
 
             this.camera.use(() => {

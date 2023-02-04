@@ -5,6 +5,7 @@ import Scene from "@VoxelLib/Scene";
 import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
 import SceneManager from "@VoxelLib/Scene/SceneManager";
 import { vec3 } from "gl-matrix";
+import DebugConsole from "@VoxelLib/Debug/DebugConsole";
 
 export default class GameScene extends Scene {
     onLoad(): void {
@@ -12,12 +13,16 @@ export default class GameScene extends Scene {
         this.camera.rotate([0, Math.PI, 0]);
         this.camera.setScale([2, 2, 2]);
 
+        this.renderer.setConfig({
+            maxResolution: -1
+        })
+
         const NOISE_SCALE = 0.5;
 
         const noise2d = createNoise2D();
         const noise3d = createNoise3D();
         const voxSample: VoxelSampleFunction = ([x, y, z], context) => {
-            const floorHeight = Math.pow((noise2d(x / NOISE_SCALE, z / NOISE_SCALE) * 0.5 + 0.5), 2) * context.resolution * 1.5;
+            const floorHeight = Math.pow((noise2d(x / NOISE_SCALE / 250, z / NOISE_SCALE / 250) * 0.5 + 0.5), 2) * context.resolution * 1.5;
 
             return [
                 (x / (context.resolution * 16)) * 255,
@@ -62,7 +67,7 @@ export default class GameScene extends Scene {
 
         // this.world.createGenerationQueue([0, 1, 0], [16, 3, 16], voxSample, 32);
 
-        // this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 32);
+        // this.world.generateFromFunction([0,0,0], [16,1,16], floorSample, 8);
 
         this.world.createGenerationQueue([0, 0, 0], [8, 8, 8], sphereSample, 32);
 
@@ -87,9 +92,11 @@ export default class GameScene extends Scene {
             this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
         }
 
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Tonemapping.ACES);
-        this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.FXAA);
-        // this.renderer.postProcessing.addFromSource(PostProcessingShaders.Effects.Vignette);
+        this.renderer.postProcessing.addByName(
+            "Effects.Fog",
+            "Tonemapping.ACES",
+            "Effects.FXAA"
+        );
 
         this.world.startGenerationQueue();
     }

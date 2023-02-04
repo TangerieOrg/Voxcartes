@@ -4,6 +4,7 @@ uniform sampler3D tex;
 uniform int size;
 uniform vec3 offset;
 uniform int lod;
+uniform bool isCameraIn;
 
 in vec3 vPos;
 in vec3 screenPos;
@@ -17,17 +18,21 @@ struct Raycast {
     vec3 normal;
 };
 
-bool isCameraIn() {
-    vec3 cameraPosOffset = (camera.position / camera.scale) - offset;
-    return
-    (cameraPosOffset.z < VOLUME_SIZE && cameraPosOffset.z > -VOLUME_SIZE)&&
-    (cameraPosOffset.y < VOLUME_SIZE && cameraPosOffset.y > -VOLUME_SIZE)&&
-    (cameraPosOffset.x < VOLUME_SIZE && cameraPosOffset.x > -VOLUME_SIZE);
+vec3 getOrigin() {
+    if (isCameraIn) return -camera.position / camera.scale + VOLUME_SIZE + offset;
+    return vPos + VOLUME_SIZE;
 }
 
-vec3 getOrigin() {
-    if (isCameraIn()) return -camera.position / camera.scale + VOLUME_SIZE + offset;
-    return vPos + VOLUME_SIZE;
+vec3 cubenormal(vec3 v) {
+    vec3 s = sign(v);
+    vec3 a = abs(v);
+
+    vec3 n = mix(
+        mix(vec3(0.0, 0.0, s.z), vec3(s.x, 0.0, 0.0), step(a.z, a.x)),
+        mix(vec3(0.0, s.y, 0.0), vec3(s.x, 0.0, 0.0), step(a.y, a.x)),
+        step(a.z, a.y));
+
+    return n;
 }
 
 Raycast castRay(const vec3 origin, const vec3 dir) {
@@ -46,7 +51,7 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
     tMaxY = tDelta.y * ((dir.y>0.0) ? (1.0 - fr.y) : fr.y);
     tMaxZ = tDelta.z * ((dir.z>0.0) ? (1.0 - fr.z) : fr.z);
 
-    vec3 norm;
+    vec3 norm = cubenormal(origin - float(size) * 0.5);
     const int maxTrace = 89;
 
     for (int i = 0; i < maxTrace; i++) {
@@ -54,9 +59,8 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
             return Raycast(vec4(0), vec3(-1), vec3(-1));
         }
         vec4 h = texelFetch(tex, ivec3(pos * lodMult), lod);
-        if (h.a > 0.0) {
-            return Raycast(h, pos, norm);
-        }
+        
+        if (h.a > 0.0) return Raycast(h, pos, norm);
 
         if (tMaxX < tMaxY) {
             if (tMaxZ < tMaxX) {
@@ -79,6 +83,8 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
                 norm = vec3(0, -stepSign.y, 0);
             }
         }
+
+        
     }
 
     return Raycast(vec4(0), vec3(-1), vec3(-1));

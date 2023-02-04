@@ -3,13 +3,19 @@ import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { vec2 } from "gl-matrix";
 import { DefaultContext, DrawCommand, Framebuffer2D, MaybeDynamicUniforms, Regl, Texture2D } from "regl";
+import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
 
 let tmp: any;
+
+export interface PostProcessingPass {
+    name : string;
+    cmd : DrawCommand;
+}
 
 export default class PostProcessingPipeline {
     private regl: Regl;
 
-    private passes: DrawCommand[] = [];
+    private passes: PostProcessingPass[] = [];
 
     private readonly textureA: Texture2D;
     private readonly textureB: Texture2D;
@@ -61,24 +67,50 @@ export default class PostProcessingPipeline {
         });
     }
 
-    add(...cmds : DrawCommand[]) {
+    getPasses() {
+        return this.passes;
+    }
+
+    add(...cmds : PostProcessingPass[]) {
         this.passes.push(...cmds);
     }
 
-    addFromSource<T extends {} = {}>(shader: ShaderSource, uniforms: MaybeDynamicUniforms<T, DefaultContext, {}> = {} as T) {
-        this.add(this.regl({
-            frag: shader.Fragment,
-            vert: shader.Vertex,
-            attributes: {
-                vertex: FullscreenQuad.vertex
-            },
-            count: FullscreenQuad.count,
-            uniforms
-        }));
+    addFromSource<T extends {} = {}>(shader: ShaderSource, uniforms: MaybeDynamicUniforms<T, DefaultContext, {}> = {} as T, name : string) {
+        const cmd : PostProcessingPass = {
+            cmd: this.regl({
+                frag: shader.Fragment,
+                vert: shader.Vertex,
+                attributes: {
+                    vertex: FullscreenQuad.vertex
+                },
+                count: FullscreenQuad.count,
+                uniforms
+            }),
+            name
+        };
+
+        this.add(cmd);
+        
+        return cmd;
+    }
+    
+    addByName(...names : string[]) {
+        for(const name of names) {
+            const a = name.split(".");
+            let cur : any = PostProcessingShaders;
+            while(a.length > 0) {
+                cur = cur[a.shift()!];
+            }
+            this.addFromSource(cur, {}, name);
+        }
     }
 
-    remove(...cmds : DrawCommand[]) {
+    remove(...cmds : PostProcessingPass[]) {
         this.passes = this.passes.filter(x => !cmds.includes(x));
+    }
+
+    removeByName(cmd : string) {
+        this.passes = this.passes.filter(x => x.name !== cmd);
     }
 
     resize(width: number, height: number) {
@@ -110,7 +142,7 @@ export default class PostProcessingPipeline {
                         color: [0, 0, 0, 0],
                         depth: 1
                     })
-                    this.passes[i]();
+                    this.passes[i].cmd();
                 })
             })
         }
@@ -122,7 +154,7 @@ export default class PostProcessingPipeline {
                     color: [0, 0, 0, 0],
                     depth: 1
                 })
-                this.passes[this.passes.length - 1]();
+                this.passes[this.passes.length - 1].cmd();
             });
         }
     }

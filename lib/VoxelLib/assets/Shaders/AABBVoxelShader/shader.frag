@@ -9,6 +9,7 @@ precision highp sampler3D;
 
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec4 normal;
+layout (location = 2) out vec4 position;
 
 
 void main() {
@@ -22,10 +23,11 @@ void main() {
     Raycast res = castRay(origin, dir);
 
     if(res.result.a == 0.0) discard;
-    vec3 position = ((res.position / float(size)) - offset);
+    vec3 pos = ((res.position / float(size)) - offset);
     normal = vec4(
         normalize(res.normal), 
-        distance(-camera.position / camera.scale, position)
+        distance(-camera.position / camera.scale, pos)
     );
     color = vec4(res.result.xyz, 1.);
+    position = camera.viewProjection * vec4(pos, 1.);
 }

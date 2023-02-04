@@ -7,13 +7,23 @@ import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import FBOManager from "./FBOManager";
 import { AsContext } from "@VoxelLib/Shared/DataUtil";
 import { CameraContext } from "@VoxelLib/Camera/Camera";
-import { vec3 } from "gl-matrix";
+import { vec2, vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
+import { defaultsDeep } from "lodash";
+import LightingPipeline from "@VoxelLib/Lighting/LightingPipeline";
 
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
+
+export interface RenderConfig {
+    maxResolution: number;
+}
+
+const DefaultRenderConfig : RenderConfig = {
+    maxResolution: 1080
+}
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
 
@@ -37,7 +47,12 @@ export default class Renderer {
 
     public postProcessing : PostProcessingPipeline;
 
-    constructor(regl: Regl, camera: Camera) {
+    public lighting : LightingPipeline;
+
+    private config : RenderConfig;
+
+    constructor(regl: Regl, camera: Camera, config : Partial<RenderConfig> = {}) {
+        this.config = defaultsDeep({}, config, DefaultRenderConfig)
 
         this.regl = regl;
         this.camera = camera;
@@ -45,6 +60,7 @@ export default class Renderer {
         this.fboManager = new FBOManager(this.regl, [
             regl.texture({ type: 'float' }), // Color
             regl.texture({ type: 'float' }), // Normal (& distance)
+            regl.texture({ type: 'float' }), // Position
         ]);
 
         this.renderContext = regl({
@@ -56,6 +72,7 @@ export default class Renderer {
                 fbo: {
                     albedo: this.fboManager.get(0),
                     normal: this.fboManager.get(1),
+                    position: this.fboManager.get(2),
                     resolution: () => this.fboManager.texSize
                 },
                 sun: {
@@ -78,13 +95,30 @@ export default class Renderer {
 
 
         this.postProcessing = new PostProcessingPipeline(regl);
+
+        this.lighting = new LightingPipeline(regl);
+    }
+
+    setConfig(config : RenderConfig) {
+        this.config = defaultsDeep({}, config, DefaultRenderConfig);
+    }
+
+    getRenderResolution({ viewportWidth: w, viewportHeight: h } : DefaultContext, res : vec2)  {
+        if(w < this.config.maxResolution) vec2.set(res, w, h);
+        else vec2.set(res, this.config.maxResolution, h/w * this.config.maxResolution);
     }
 
     start() {
+        let res : vec2 = vec2.create();
         this.regl.frame((ctxt) => {
             stats.begin();
             this.camera.handleInput();
-            this.fboManager.resize(ctxt.viewportWidth, ctxt.viewportHeight);
+            if(this.config.maxResolution > 0) {
+                this.getRenderResolution(ctxt, res);
+                this.fboManager.resize(res[0], res[1]);
+            } else {
+                this.fboManager.resize(ctxt.viewportWidth, ctxt.viewportHeight);
+            }
             this.postProcessing.resize(ctxt.viewportWidth, ctxt.viewportHeight);
 
             this.camera.use(() => {

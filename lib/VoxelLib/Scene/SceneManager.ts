@@ -1,6 +1,7 @@
 import { Regl } from "regl";
 import { createRegl } from "..";
 import Scene from "./Scene";
+import "../Debug/DebugConsole/DebugConsole";
 
 const SceneManager = new (class SceneManager {
 

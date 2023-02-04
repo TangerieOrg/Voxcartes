@@ -5,11 +5,15 @@
     bottom: 0em;
     z-index: 50;
     color: white;
-    background-color: #0f0f0f;
+    background-color: #0f0f0fcc;
     padding: 0.25em;
     font-family: monospace;
     font-size: 1.2rem;
-    opacity: 80%;
+    transition: background-color 0.1s ease-in;
+}
+
+.container.disabled {
+    background-color: rgba(0,0,0,0);
 }
 
 .container > input {
@@ -21,6 +25,12 @@
     color: white;
     padding: 0.25em;
     outline: none;
+    transition: opacity 0.1s ease-in;
+}
+
+.container.disabled > input {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .container > ul {
@@ -33,22 +43,32 @@
     overflow-y: auto;
 }
 
-.container > ul > li {
+.debug {
     margin: 10px 0;
+    opacity: 0;
+    transition: opacity 0.1s ease-in;
 }
 
-.debug-log {
+.start {
+    opacity: 1;
+}
+
+.container:not(.disabled) .debug  {
+    opacity: 1;
+}
+
+.debug.log {
     color: white;
 }
 
-.debug-warn {
+.debug.warn {
     color: orange;
 }
 
-.debug-error {
+.debug.error {
     color: red;
 }
 
-.debug-cmd {
+.debug.cmd {
     color: gray;
 }

@@ -5,7 +5,6 @@ precision highp int;
 precision highp sampler2D;
 
 // #include<CameraUniforms>
-// #include<Fog>
 // #include<FBOUniforms>
 // #include<Common>
 // #include<Lights>
@@ -26,6 +25,4 @@ void main() {
 
     // Lighting
     color.rgb *= calculateDirectionalLight(normal.xyz, sun);
-    
-    color.rgb = calculateColorWithFog(color.rgb, normal.w);
 }

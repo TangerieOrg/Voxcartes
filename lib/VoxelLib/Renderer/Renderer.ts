@@ -11,6 +11,7 @@ import { vec2, vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
 import { defaultsDeep } from "lodash";
+import LightingPipeline from "@VoxelLib/Lighting/LightingPipeline";
 
 
 const stats = new Stats();
@@ -46,6 +47,8 @@ export default class Renderer {
 
     public postProcessing : PostProcessingPipeline;
 
+    public lighting : LightingPipeline;
+
     private config : RenderConfig;
 
     constructor(regl: Regl, camera: Camera, config : Partial<RenderConfig> = {}) {
@@ -57,6 +60,7 @@ export default class Renderer {
         this.fboManager = new FBOManager(this.regl, [
             regl.texture({ type: 'float' }), // Color
             regl.texture({ type: 'float' }), // Normal (& distance)
+            regl.texture({ type: 'float' }), // Position
         ]);
 
         this.renderContext = regl({
@@ -68,6 +72,7 @@ export default class Renderer {
                 fbo: {
                     albedo: this.fboManager.get(0),
                     normal: this.fboManager.get(1),
+                    position: this.fboManager.get(2),
                     resolution: () => this.fboManager.texSize
                 },
                 sun: {
@@ -90,6 +95,8 @@ export default class Renderer {
 
 
         this.postProcessing = new PostProcessingPipeline(regl);
+
+        this.lighting = new LightingPipeline(regl);
     }
 
     setConfig(config : RenderConfig) {

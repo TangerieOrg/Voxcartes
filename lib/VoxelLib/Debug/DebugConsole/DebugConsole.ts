@@ -25,7 +25,7 @@ const DebugConsole = new (class DebugConsole {
 
     constructor() {
         ELS.container.classList.add(ConsoleStyles.container);
-        ELS.container.hidden = true;
+        ELS.container.classList.add(ConsoleStyles.disabled);
         InputManager.emitter.on("keydown", ev => {
             if(ev === ACTIVE_KEY) this.setActive(true);
         });
@@ -51,7 +51,11 @@ const DebugConsole = new (class DebugConsole {
     setActive(active = !this.active) {
         if(this.active === active) return;
         this.active = active;
-        ELS.container.hidden = !active;
+        if(active) {
+            ELS.container.classList.remove(ConsoleStyles.disabled);
+        } else {
+            ELS.container.classList.add(ConsoleStyles.disabled);
+        }
         InputManager.active = !active;
         if(active) ELS.input.focus();
     }
@@ -116,18 +120,31 @@ DebugConsole.register({
 
 export default DebugConsole;
 
-const _log = console.log;
-console.log = function(){
-    DebugConsole.log(...arguments);
-    // @ts-ignore
-    _log.apply(console, arguments)
-}
+export const OLD_LOG = console.log;
+
+(function () {
+    const keys = ["log", "warn", "error"] as const;
+    for(const k of keys) {
+        const _old = console[k];
+        console[k] = function() {
+            DebugConsole[k]("[CONSOLE]", ...arguments);
+            // @ts-ignore
+            _old.apply(console, arguments);
+        }
+    }
+})();
+
 
 function logLevel(level : string, ...args : any[]) {
     const str = args.map(x => stringify(x)).join(" ");
     const el = ELS.text.appendChild(document.createElement("li"));
     el.innerText = str;
-    el.classList.add(ConsoleStyles["debug-" + level])
-    el.scroll()
+    el.classList.add(ConsoleStyles.debug);
+    el.classList.add(ConsoleStyles[level]);
+    el.classList.add(ConsoleStyles["start"]);
+    setTimeout(() => {
+        el.classList.remove(ConsoleStyles["start"]);
+    }, 2500);
+    el.scrollIntoView(false);
     return el;
 }

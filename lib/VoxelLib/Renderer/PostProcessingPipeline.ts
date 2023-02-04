@@ -94,13 +94,15 @@ export default class PostProcessingPipeline {
         return cmd;
     }
     
-    addByName(name : string) {
-        const a = name.split(".");
-        let cur : any = PostProcessingShaders;
-        while(a.length > 0) {
-            cur = cur[a.shift()!];
+    addByName(...names : string[]) {
+        for(const name of names) {
+            const a = name.split(".");
+            let cur : any = PostProcessingShaders;
+            while(a.length > 0) {
+                cur = cur[a.shift()!];
+            }
+            this.addFromSource(cur, {}, name);
         }
-        return this.addFromSource(cur, {}, name);
     }
 
     remove(...cmds : PostProcessingPass[]) {

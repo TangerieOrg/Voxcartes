@@ -93,6 +93,7 @@ export default class GameScene extends Scene {
         }
 
         this.renderer.postProcessing.addByName(
+            "Lighting.Directional",
             "Effects.Fog",
             "Tonemapping.ACES",
             "Effects.FXAA"

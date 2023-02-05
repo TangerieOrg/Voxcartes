@@ -11,7 +11,6 @@ import { vec2, vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
 import { defaultsDeep } from "lodash";
-import LightingPipeline from "@VoxelLib/Lighting/LightingPipeline";
 
 
 const stats = new Stats();
@@ -27,8 +26,7 @@ const DefaultRenderConfig : RenderConfig = {
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
 
-const lightPos: vec3 = vec3.create();
-vec3.set(lightPos, 0, -1, 1);
+const lightPos: vec3 = vec3.fromValues(0, -1, 1);
 
 export default class Renderer {
     private regl: Regl;
@@ -46,8 +44,6 @@ export default class Renderer {
     public renderContext: DrawCommand;
 
     public postProcessing : PostProcessingPipeline;
-
-    public lighting : LightingPipeline;
 
     private config : RenderConfig;
 
@@ -95,8 +91,6 @@ export default class Renderer {
 
 
         this.postProcessing = new PostProcessingPipeline(regl);
-
-        this.lighting = new LightingPipeline(regl);
     }
 
     setConfig(config : RenderConfig) {
@@ -128,7 +122,7 @@ export default class Renderer {
                     });
 
                     this.postProcessing.use(() => {
-                        this.renderFBO()
+                        this.renderFBO();
                     });
                 });
             });

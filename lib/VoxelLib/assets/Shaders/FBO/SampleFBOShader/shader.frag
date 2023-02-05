@@ -7,11 +7,8 @@ precision highp sampler2D;
 // #include<CameraUniforms>
 // #include<FBOUniforms>
 // #include<Common>
-// #include<Lights>
 
 in vec2 uv;
-
-uniform DirectionalLight sun;
 
 out vec4 color;
 
@@ -22,7 +19,4 @@ void main() {
     if(gl_FragDepth > 1.0) discard;
     
     color = vec4(albedo, 1);
-
-    // Lighting
-    color.rgb *= calculateDirectionalLight(normal.xyz, sun);
 }

@@ -144,6 +144,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.batchViewDistances = Array(batchOffsets.length).fill(0).map(() => []);
         const camPos = vec3.scale(cPos, camera.getPosition(), 1 / camera.getScale()[0]);
         for(const [_, chunk] of this.chunks) {
+            if(chunk.numFilled === 0) continue;
             const distance = vec3.distance(chunk.getPosition(), camPos);
             for(let index = 0; index < batchOffsets.length; index++) {
                 if(distance < batchOffsets[index]) {

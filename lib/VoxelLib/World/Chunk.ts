@@ -1,6 +1,8 @@
 import ObjectTransform from "@VoxelLib/Shared/Object";
+import WorkerPool from "@VoxelLib/Workers/WorkerPool";
 import { vec3, vec4 } from "gl-matrix";
 import { DefaultContext, MaybeDynamicUniforms, Regl, Texture3D } from "regl";
+import { ChunkWorkerCommandMap } from "./ChunkWorkerTypes";
 import { NUM_CHANNELS } from "./contants";
 import { positionToStartIndexInChunk } from "./GeoUtil";
 import { GenerationContext, VoxelSampleFunction } from "./World";
@@ -105,38 +107,31 @@ export default class Chunk extends ObjectTransform {
         this.dirty = true;
     }
 
+    async setFromWorker(pool : WorkerPool<ChunkWorkerCommandMap>) {
+        const [[data, ...lods], numFilled] = await pool.execute("generate", this.resolution, this.position, this.lods.length);
+        this.data.set(data, 0);
+        
+        if(this.numFilled === 0 && numFilled === 0) return;
+        
+        this.numFilled = numFilled;
+
+        for(let i = 0; i < lods.length; i++) {
+            this.lods[i].set(lods[i]);
+        }
+
+        this.dirty = true;
+    }
+
     update() {
-        // TODO: Make more efficient
         this.texture.subimage(this.data, 0, 0, 0, 0);
 
         for(let i = 0; i < this.lods.length; i++) {
-            this.generateLod(i);
             this.texture.subimage(this.lods[i], 0, 0, 0, i + 1);
         }
         this.dirty = false;
     }
 
-    private generateLod(level : number) {
-        const oldRes = this.resolution / Math.pow(2, level);
-        const newRes = oldRes / 2;
-        let index = 0;
-        const out = this.lods[level];
-        const input = level === 0 ? this.data : this.lods[level - 1];
-
-        for(let z = 0; z < newRes; z++) {
-            for(let y = 0; y < newRes; y++) {
-                for(let x = 0; x < newRes; x++) {
-                    const start = positionToStartIndexInChunk([x * 2, y * 2, z * 2], oldRes);
-                    out.set(input.subarray(start, start + 4), index)
-                    index += 4;
-                }
-            }
-        }
-    }
-
     private positionToIndex(pos : vec3) {
         return (pos[0] + pos[1] * this.resolution + pos[2] * this.resolution * this.resolution) * NUM_CHANNELS;
     }
-
-    
 }

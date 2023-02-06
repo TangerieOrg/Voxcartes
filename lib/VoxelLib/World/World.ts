@@ -11,6 +11,9 @@ import { createCubeDefinition } from "../Shapes/Cube";
 import Scene from "@VoxelLib/Scene";
 import { throttle } from "lodash";
 import Chunk, { ChunkUniforms, ChunkIndex } from "./Chunk";
+import WorkerPool from "@VoxelLib/Workers/WorkerPool";
+import { ExampleWorkerCommandMap } from "@VoxelLib/Workers/ExampleWorkerTypes";
+import { ChunkWorkerCommandMap } from "./ChunkWorkerTypes";
 
 const cubeDef = createCubeDefinition(0.5);
 
@@ -39,6 +42,9 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
 
     public queue: (() => void)[] = [];
 
+    private chunkWorkers : Record<string, WorkerPool<ChunkWorkerCommandMap>> = {};
+
+    public maxChunkUpdates = 5;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -62,51 +68,55 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         });
 
         this.scene.camera.emitter.on("move", throttle(this.updateBatchViewDistances.bind(this), 100));
+
+        
     }
 
-    setChunkFromFunction(chunkPos: vec3, func: VoxelSampleFunction, update = true, resolution = CHUNK_SIZE) {
-        this.getOrCreateChunk(chunkPos, resolution).setFromFunction(func);
-        this.updateBatchViewDistances();
-        return this;
+    addChunkWorker(name : string, url : URL, count = 1) {
+        if(this.chunkWorkers[name]) return;
+        this.chunkWorkers[name] = new WorkerPool(url);
+        this.chunkWorkers[name].createWorkers(count);
     }
 
-    generateFromFunction(minChunk: vec3, maxChunk: vec3, func: VoxelSampleFunction, resolution = CHUNK_SIZE) {
+    setChunkFromWorker(name : string, chunkPos: vec3, resolution = CHUNK_SIZE) {
+        const pool = this.chunkWorkers[name];
+        if(!pool) {
+            console.warn(`No worker ${name}`);
+            return;
+        }
+
+        this.getOrCreateChunk(chunkPos, resolution).setFromWorker(pool);
+    }
+
+    generateFromWorker(minChunk: vec3, maxChunk: vec3, name : string, resolution = CHUNK_SIZE) {
+        const pool = this.chunkWorkers[name];
+        if(!pool) {
+            console.warn(`No worker ${name}`);
+            return;
+        }
+        
         for (let x = minChunk[0]; x < maxChunk[0]; x++) {
             for (let y = minChunk[1]; y < maxChunk[1]; y++) {
                 for (let z = minChunk[2]; z < maxChunk[2]; z++) {
-                    this.getOrCreateChunk([x, y, z], resolution).setFromFunction(func)
+                    this.getOrCreateChunk([x, y, z], resolution).setFromWorker(pool)
                 }
             }
         }
-
-        return this;
     }
 
-    createGenerationQueue(minChunk: vec3, maxChunk: vec3, func: VoxelSampleFunction, resolution = CHUNK_SIZE) {
-        const queue: [() => void, vec3][] = [];
-
-        for (let x = minChunk[0]; x < maxChunk[0]; x++) {
-            for (let y = minChunk[1]; y < maxChunk[1]; y++) {
-                for (let z = minChunk[2]; z < maxChunk[2]; z++) {
-                    queue.push([() => this.setChunkFromFunction([x, y, z], func, true, resolution), [x, y, z]]);
-                }
-            }
-        }
-
-        queue.sort(([_, a], [__, b]) => {
-            return vec3.squaredDistance(this.scene.camera.getPosition(), b) - vec3.squaredDistance(this.scene.camera.getPosition(), a);
-        })
-
-        this.queue.push(...queue.map(x => x[0]));
-
-    }
-
-    popQueue() {
-        this.queue.pop()?.();
-    }
 
     private updateDirtyChunks() {
-        this.chunks.forEach(v => { if(v.dirty) v.update() })
+        let numUpdates = 0;
+        
+        for(const [_, chunk] of this.chunks) {
+            if(chunk.dirty) {
+                chunk.update();
+                numUpdates++;
+            }
+            if(numUpdates >= this.maxChunkUpdates) break;
+        }
+
+        if(numUpdates > 0) this.updateBatchViewDistances();
     }
 
     getChunk(pos: vec3) {
@@ -169,13 +179,6 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         this.updateDirtyChunks();
     }
 
-    startGenerationQueue() {
-        const callback = () => {
-            if (this.queue.length > 1) requestIdleCallback(() => callback());
-            this.popQueue();
-        }
-        callback();
-    }
 
     sortChunksByCameraDistance(chunks : Chunk[]) {
         const camPos = this.getCurrentChunkPos(this.scene.camera);

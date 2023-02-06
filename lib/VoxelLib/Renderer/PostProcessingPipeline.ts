@@ -1,9 +1,9 @@
-import { ShaderSource } from "@VoxelLib/Shader/Shader";
+import { ShaderSource } from "@VoxelLib/Shaders/Shader";
 import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import { vec2 } from "gl-matrix";
 import { DefaultContext, DrawCommand, Framebuffer2D, MaybeDynamicUniforms, Regl, Texture2D } from "regl";
-import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
+import PostProcessingShaders from "@VoxelLib/Shaders/GLSL/PostProcessing";
 
 let tmp: any;
 

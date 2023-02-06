@@ -1,6 +1,6 @@
 import DebugConsole from "@VoxelLib/Debug/DebugConsole";
 import SceneManager from "@VoxelLib/Scene/SceneManager";
-import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
+import PostProcessingShaders from "@VoxelLib/Shaders/GLSL/PostProcessing";
 
 const ls = () => SceneManager.currentScene?.renderer.postProcessing.getPasses().map(x => x.name).join("\n");
 const rm = (name : string) => {

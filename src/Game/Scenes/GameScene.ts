@@ -1,16 +1,14 @@
-import REGL, { CommandStats, DrawCommand } from "regl";
+import REGL, { DrawCommand } from "regl";
 import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { VoxelSampleFunction } from "@VoxelLib/World/World";
 import Scene from "@VoxelLib/Scene";
-import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
 import SceneManager from "@VoxelLib/Scene/SceneManager";
 import { vec3 } from "gl-matrix";
-import DebugConsole from "@VoxelLib/Debug/DebugConsole";
 
 export default class GameScene extends Scene {
     onLoad(): void {
-        this.camera.setPosition([-8, -8, 4]);
-        this.camera.rotate([0, Math.PI, 0]);
+        this.camera.setPosition([4, 4, -8]);
+        // this.camera.rotate([0, Math.PI, 0]);
         this.camera.setScale([2, 2, 2]);
 
         this.renderer.setConfig({
@@ -33,9 +31,9 @@ export default class GameScene extends Scene {
         }
         const floorSample: VoxelSampleFunction = ([x, y, z], context) => {
             return [
-                (x / (context.resolution * 16)) * 255,
-                (y / (context.resolution * 3)) * 255,
-                (z / (context.resolution * 16)) * 255,
+                (x / (context.resolution * 3)) * 255,
+                (y / (context.resolution)) * 255,
+                (z / (context.resolution)) * 255,
                 255
             ]
         }
@@ -71,6 +69,9 @@ export default class GameScene extends Scene {
 
         this.world.createGenerationQueue([0, 0, 0], [8, 8, 8], sphereSample, 32);
 
+        // this.world.setChunkFromFunction([0, 0, 0], floorSample, true, 32);
+        // this.world.setChunkFromFunction([1, 0, 0], floorSample, true, 32);
+        // this.world.setChunkFromFunction([2, 0, 0], floorSample, true, 32);
 
 
         const cmds: [string, DrawCommand][] = [
@@ -80,16 +81,12 @@ export default class GameScene extends Scene {
         ];
 
         if (SceneManager.isDebug) {
+            this.renderer.debug.set("Frame Time", () => this.renderer.frameTime, "ms");
             for (const [name, cmd] of cmds) {
                 this.renderer.debug.trackDifference(`[${name}] GPU`, () => cmd.stats.gpuTime, "ms/frame");
                 this.renderer.debug.trackDifference(`[${name}] CPU`, () => cmd.stats.cpuTime, "ms/frame");
                 this.renderer.debug.trackDifference(`[${name}] Count`, () => cmd.stats.count, "call/frame");
             }
-        } else {
-            this.renderer.debug.set("Camera Position", () => this.camera.getPosition());
-            this.renderer.debug.set("Num Voxels", () => this.world.numVoxels);
-            this.renderer.debug.set("Num Chunks", () => this.world.numChunks);
-            this.renderer.debug.set("Chunk Queue", () => this.world.queue.length);
         }
 
         this.renderer.postProcessing.addByName(
@@ -103,7 +100,6 @@ export default class GameScene extends Scene {
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {
-        // this.world.popQueue();
-        this.world.render(this.camera);
+        this.world.render();
     }
 }

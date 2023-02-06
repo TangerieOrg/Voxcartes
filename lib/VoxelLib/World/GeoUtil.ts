@@ -4,8 +4,7 @@ import { NUM_CHANNELS } from "./contants";
 export const createEmptyChunk = (resolution : number) => 
     new Uint8Array(resolution * resolution * resolution * NUM_CHANNELS);
 
-export const positionToIndex = (pos : vec3) => 
-    (pos[0] << 16) | (pos[1] << 8) | pos[2];
+export const positionToIndex = (pos : vec3) => pos.join(",")
 
 export const positionToChunkPosition = (pos : vec3, resolution : number) => 
     pos.map(x => Math.floor(x / resolution)) as vec3;

@@ -1,5 +1,6 @@
 import { createPostProcessingShader } from "@VoxelLib/Renderer/RenderUtil";
 import PostProcessingShaders from "./**/*.frag";
+import preval from 'preval.macro'
 
 // https://github.com/dmnsgn/glsl-tone-map
 

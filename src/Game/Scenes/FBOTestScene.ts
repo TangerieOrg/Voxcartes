@@ -1,4 +1,4 @@
-import PostProcessingShaders from "@VoxelLib/assets/Shaders/PostProcessing";
+import PostProcessingShaders from "@VoxelLib/Shaders/GLSL/PostProcessing";
 import Scene from "@VoxelLib/Scene";
 import SceneManager from "@VoxelLib/Scene/SceneManager";
 import { VoxelSampleFunction } from "@VoxelLib/World/World";

@@ -15,6 +15,8 @@ export type ShaderIncludeFiles = {
     end?: string;
 } & Record<string, string>;
 
+export const createShaderFromSource = (source : ShaderSource) => createShader(source.Fragment, source.Vertex);
+
 export function createShader(fragment : string, vertex : string) : ShaderSource {
     const Fragment = replaceShaderIncludes(fragment, "frag");
     const Vertex = replaceShaderIncludes(vertex, "vert");

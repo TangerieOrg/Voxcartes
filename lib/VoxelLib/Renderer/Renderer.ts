@@ -2,7 +2,7 @@ import { DefaultContext, DrawCommand, Regl } from "regl";
 import Camera from "../Camera";
 import Stats from "stats.js";
 import DebugUI from "../Debug/DebugUI";
-import SampleFBOShader from "@VoxelLib/assets/Shaders/FBO/SampleFBOShader";
+import SampleFBOShader from "@VoxelLib/Shaders/GLSL/FBO/SampleFBOShader";
 import FullscreenQuad from "@VoxelLib/Shapes/FullscreenQuad";
 import FBOManager from "./FBOManager";
 import { AsContext } from "@VoxelLib/Shared/DataUtil";
@@ -11,6 +11,7 @@ import { vec2, vec3 } from "gl-matrix";
 import { unpackObjectToDot } from "@VoxelLib/Utility/UniformUtil";
 import PostProcessingPipeline from "./PostProcessingPipeline";
 import { defaultsDeep } from "lodash";
+import SceneManager from "@VoxelLib/Scene/SceneManager";
 
 
 const stats = new Stats();
@@ -46,6 +47,8 @@ export default class Renderer {
     public postProcessing : PostProcessingPipeline;
 
     private config : RenderConfig;
+
+    public frameTime : number = 0; 
 
     constructor(regl: Regl, camera: Camera, config : Partial<RenderConfig> = {}) {
         this.config = defaultsDeep({}, config, DefaultRenderConfig)
@@ -104,7 +107,7 @@ export default class Renderer {
 
     start() {
         let res : vec2 = vec2.create();
-        this.regl.frame((ctxt) => {
+        let func = (ctxt : DefaultContext) => {
             stats.begin();
             this.camera.handleInput();
             if(this.config.maxResolution > 0) {
@@ -131,6 +134,18 @@ export default class Renderer {
             stats.end();
 
             if (ctxt.tick % 30 === 0) this.debug.update();
-        })
+        }
+
+        if(SceneManager.isDebug) {
+            const _func = func;
+            let start;
+            func = (ctxt : DefaultContext) => {
+                start = performance.now()
+                _func(ctxt);
+                this.frameTime = performance.now() - start;
+            }
+        }
+
+        this.regl.frame(func);
     }
 }

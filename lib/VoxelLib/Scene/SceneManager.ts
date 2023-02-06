@@ -8,7 +8,7 @@ const SceneManager = new (class SceneManager {
     isDebug : boolean;
     regl : Regl;
     currentScene? : Scene;
-
+    
     constructor() {
         // @ts-ignore
         this.isDebug = process.env.NODE_ENV === "development";

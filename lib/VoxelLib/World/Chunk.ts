@@ -1,187 +1,142 @@
-import { mat4, vec3 } from "gl-matrix";
-import { Texture3D } from "regl";
-import ObjectTransform from "../Shared/Object";
-import { BitflagDebugger, BitflagMaxValue } from "../Utility/EnumUtil";
+import ObjectTransform from "@VoxelLib/Shared/Object";
+import { vec3, vec4 } from "gl-matrix";
+import { DefaultContext, MaybeDynamicUniforms, Regl, Texture3D } from "regl";
 import { NUM_CHANNELS } from "./contants";
-import { createEmptyChunk, positionToStartIndexInChunk } from "./GeoUtil";
+import { positionToStartIndexInChunk } from "./GeoUtil";
+import { GenerationContext, VoxelSampleFunction } from "./World";
 
+const NUM_LODS = 2;
 
-export interface ChunkProps {
-    tex: Texture3D;
-    model: mat4;
-    size: number;
-    offset: vec3;
-    index: number;
-    lod : number;
-}
-
-
-export type ChunkIndex = number;
 export type ChunkData = Uint8Array;
+export type ChunkIndex = string;
 
-export const ChunkFillSideValue = {
-    Top: 1,  // PY
-    Bottom: 2, // NY
-    Right: 4, // PX
-    Left: 8, // NX
-    Back: 16, // PZ
-    Front: 32, // NZ
-} as const;
-
-export type ChunkFillSide = keyof typeof ChunkFillSideValue;
-
-export const ChunkSides : ChunkFillSide[] = Object.keys(ChunkFillSideValue) as ChunkFillSide[];
-
-export const ChunkSideDirection : Record<ChunkFillSide, vec3> = {
-    Top:    [0, 1, 0],  
-    Bottom: [0, -1, 0], 
-    Right:  [1, 0, 0], 
-    Left:   [-1, 0, 0], 
-    Back:   [0, 0, 1], 
-    Front:  [0, 0, -1], 
+export const ChunkUniforms : MaybeDynamicUniforms<{}, DefaultContext, Chunk> = {
+    tex: (ctxt : DefaultContext, chunk : Chunk) => chunk.texture,
+    model: (ctxt : DefaultContext, chunk : Chunk) => chunk.worldMatrix,
+    size: (ctxt : DefaultContext, chunk : Chunk) => chunk.resolution,
+    offset: (ctxt : DefaultContext, chunk : Chunk) => chunk.getPosition(),
+    lod: (ctxt : DefaultContext, chunk : Chunk) => chunk.lod,
+    isCameraIn: (ctxt : DefaultContext & { currentChunk : ChunkIndex }, chunk : Chunk) => chunk.index === ctxt.currentChunk
 };
 
-export const ChunkSideOpposing : Record<ChunkFillSide, ChunkFillSide> = {
-    Top:    "Bottom",  
-    Bottom: "Top", 
-    Right:  "Left", 
-    Left:   "Right", 
-    Back:   "Front", 
-    Front:  "Back", 
-}
-
-export const ChunkFillSideDebugger = BitflagDebugger(ChunkFillSideValue);
-
-export const ALL_CHUNK_SIDES_FILLED = BitflagMaxValue(ChunkFillSideValue);
-
-export interface Chunk {
-    position : vec3;
+export default class Chunk extends ObjectTransform {
     data : ChunkData;
+    lods : ChunkData[];
     texture : Texture3D;
-    transform : ObjectTransform;
-    isEmpty : boolean;
-    resolution: number;
-    filled : number;
-}
+    numFilled : number;
+    resolution : number;
+    regl : Regl;
+    dirty : boolean;
+    lod : number;
 
-export const isChunkSideFilled = (chunk : Chunk, side : ChunkFillSide) => (chunk.filled & ChunkFillSideValue[side]) !== 0;
-export const isAnyChunkSideFilled = (chunk : Chunk, ...sides : ChunkFillSide[]) => (chunk.filled & sides.map(x => ChunkFillSideValue[x]).reduce((ps, a) => ps + a, 0)) !== 0;
+    public readonly index : ChunkIndex;
 
-// XYZ => Index = (x + y * res + z * res * res) * NUM_CHANNELS
+    constructor(regl : Regl, position : vec3, resolution : number) {
+        super();
+        this.dirty = false;
+        this.regl = regl;
+        this.resolution = resolution;
+        this.numFilled = 0;
+        this.data = new Uint8Array(resolution * resolution * resolution * NUM_CHANNELS);
+        this.texture = regl.texture3D({
+            width: resolution,
+            height: resolution,
+            depth: resolution,
+            format: "rgba",
+            data: this.data,
+            mipmap: true,
+            type: "uint8"
+        });
 
-export function getChunkFilledSides(chunk : Chunk) : number {
-    // Start filled, then remove if not filled
-    let filled = ALL_CHUNK_SIDES_FILLED;
+        this.setPosition(position);
 
-    const MAX_X = chunk.resolution - 1;
-    const MAX_Y = MAX_X * chunk.resolution;
-    const MAX_Z = MAX_Y * chunk.resolution;
-    const resSq = chunk.resolution * chunk.resolution;
+        this.lods = [];
+        let r = this.resolution;
+        for(let i = 1; i < NUM_LODS + 1; i++) {
+            r = r / 2;
+            this.lods[i - 1] = new Uint8Array(r * r * r * NUM_CHANNELS);
+        } 
 
-    let index = 0;
-    // Front side
-    front:
-    for(let x = 0; x < chunk.resolution; x++) {
-        for(let y = 0; y < chunk.resolution; y++) {
-            index = NUM_CHANNELS * (x + y * chunk.resolution) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Front;
-                break front;
+        this.index = this.position.join(",");
+
+        this.lod = 0;
+    }
+
+    setVoxel(pos : vec3, value : vec4) {
+        const index = this.positionToIndex(pos);
+        const prevAlpha = this.data.at(index + 3)!;
+        this.data.set(value, index);
+        if(prevAlpha > 0 && value[3] === 0) {
+            this.numFilled--;
+        } else if (prevAlpha === 0 && value[3] > 0) {
+            this.numFilled++;
+        }
+
+        this.dirty = true;
+    }
+
+    setFromFunction(func : VoxelSampleFunction) {
+        this.numFilled = 0;
+        let index = this.data.length - NUM_CHANNELS;
+        
+        const offsetPosition = vec3.scale(
+            vec3.create(),
+            this.position,
+            this.resolution
+        );
+
+        const currentPos = vec3.create();
+        const context : GenerationContext = {
+            resolution: this.resolution
+        }
+        let data: vec4;
+        for (let z = 0; z < this.resolution; z++) {
+            for (let y = 0; y < this.resolution; y++) {
+                for (let x = 0; x < this.resolution; x++) {
+                    vec3.add(currentPos, [x, y, z], offsetPosition);
+                    data = func(currentPos, context);
+                    this.data.set(data, index);
+                    index -= NUM_CHANNELS;
+                    if (data[3] > 0) this.numFilled++;
+                }
+            }
+        }
+
+        this.dirty = true;
+    }
+
+    update() {
+        // TODO: Make more efficient
+        this.texture.subimage(this.data, 0, 0, 0, 0);
+
+        for(let i = 0; i < this.lods.length; i++) {
+            this.generateLod(i);
+            this.texture.subimage(this.lods[i], 0, 0, 0, i + 1);
+        }
+        this.dirty = false;
+    }
+
+    private generateLod(level : number) {
+        const oldRes = this.resolution / Math.pow(2, level);
+        const newRes = oldRes / 2;
+        let index = 0;
+        const out = this.lods[level];
+        const input = level === 0 ? this.data : this.lods[level - 1];
+
+        for(let z = 0; z < newRes; z++) {
+            for(let y = 0; y < newRes; y++) {
+                for(let x = 0; x < newRes; x++) {
+                    const start = positionToStartIndexInChunk([x * 2, y * 2, z * 2], oldRes);
+                    out.set(input.subarray(start, start + 4), index)
+                    index += 4;
+                }
             }
         }
     }
 
-    back:
-    for(let x = 0; x < chunk.resolution; x++) {
-        for(let y = 0; y < chunk.resolution; y++) {
-            index = NUM_CHANNELS * (x + y * chunk.resolution + MAX_Z) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Back;
-                break back;
-            }
-        }
+    private positionToIndex(pos : vec3) {
+        return (pos[0] + pos[1] * this.resolution + pos[2] * this.resolution * this.resolution) * NUM_CHANNELS;
     }
-
-    right:
-    for(let z = 0; z < chunk.resolution; z++) {
-        for(let y = 0; y < chunk.resolution; y++) {
-            index = NUM_CHANNELS * (y * chunk.resolution + z * resSq) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Right;
-                break right;
-            }
-        }
-    }
-
-    left:
-    for(let z = 0; z < chunk.resolution; z++) {
-        for(let y = 0; y < chunk.resolution; y++) {
-            index = NUM_CHANNELS * (MAX_X + y * chunk.resolution + z * resSq) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Left;
-                break left;
-            }
-        }
-    }
-
-    top:
-    for(let z = 0; z < chunk.resolution; z++) {
-        for(let x = 0; x < chunk.resolution; x++) {
-            index = NUM_CHANNELS * (x + MAX_Y + z * resSq) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Top;
-                break top;
-            }
-        }
-    }
-
-    bottom:
-    for(let z = 0; z < chunk.resolution; z++) {
-        for(let x = 0; x < chunk.resolution; x++) {
-            index = NUM_CHANNELS * (x + z * resSq) + 3;
-            if(chunk.data[index] === 0) {
-                filled -= ChunkFillSideValue.Bottom;
-                break bottom;
-            }
-        }
-    }
-
-
-    return filled;
-}
-
-export function generateChunkLods(chunk : Chunk, numLods : number) {
-    const lods : Uint8Array[] = [];
-
-    let curRes = chunk.resolution;
-    let lastLod = chunk.data;
-    for(let i = 0; i < numLods; i++) {
-        lods.push(generateLod(lastLod, curRes));
-        curRes /= 2;
-        lastLod = lods[i];
-    }
-
-    return lods;
-}
-
-// Generates next lod down
-export function generateLod(input : Uint8Array, resolution : number) {
-    const newRes = resolution / 2;
-    const out = createEmptyChunk(newRes);
-
-    let index = 0;
 
     
-
-    for(let z = 0; z < newRes; z++) {
-        for(let y = 0; y < newRes; y++) {
-            for(let x = 0; x < newRes; x++) {
-                const start = positionToStartIndexInChunk([x * 2, y * 2, z * 2], resolution);
-                out.set(input.subarray(start, start + 4), index)
-                index += 4;
-            }
-        }
-    }
-
-    return out;
 }

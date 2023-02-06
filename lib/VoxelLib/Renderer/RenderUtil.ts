@@ -1,4 +1,4 @@
-import { createShader } from "@VoxelLib/Shader/ShaderUtil";
+import { createShader } from "@VoxelLib/Shaders/ShaderUtil";
 
 
 const PostVShader = `#version 300 es

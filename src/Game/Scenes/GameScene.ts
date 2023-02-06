@@ -1,6 +1,4 @@
 import REGL, { DrawCommand } from "regl";
-import { createNoise2D, createNoise3D } from 'simplex-noise';
-import { VoxelSampleFunction } from "@VoxelLib/World/World";
 import Scene from "@VoxelLib/Scene";
 import SceneManager from "@VoxelLib/Scene/SceneManager";
 

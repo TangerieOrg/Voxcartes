@@ -43,7 +43,8 @@ export default class ObjectTransform {
     }
 
     setPosition(pos : vec3) {
-        vec3.copy(this.position, pos);
+        vec3.set(this.position, pos[0], pos[1], pos[2]);
+        // vec3.copy(this.position, pos);
         this.updateMatrices();
     }
 

@@ -15,7 +15,10 @@ import SceneManager from "@VoxelLib/Scene/SceneManager";
 
 
 const stats = new Stats();
-document.body.appendChild(stats.dom);
+// @ts-ignore
+if(process.env.NODE_ENV === 'development') {
+    document.body.appendChild(stats.dom);
+}
 
 export interface RenderConfig {
     maxResolution: number;
@@ -27,7 +30,7 @@ const DefaultRenderConfig : RenderConfig = {
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
 
-const lightPos: vec3 = vec3.fromValues(0, -1, 1);
+const lightPos: vec3 = vec3.fromValues(0, -1, -1);
 
 export default class Renderer {
     private regl: Regl;
@@ -65,7 +68,7 @@ export default class Renderer {
         this.renderContext = regl({
             uniforms: unpackObjectToDot({
                 fog: {
-                    size: [5, 12],
+                    size: [10, 25],
                     albedo: [0, 0, 0]
                 },
                 fbo: {
@@ -108,7 +111,6 @@ export default class Renderer {
     start() {
         let res : vec2 = vec2.create();
         let func = (ctxt : DefaultContext) => {
-            stats.begin();
             this.camera.handleInput();
             if(this.config.maxResolution > 0) {
                 this.getRenderResolution(ctxt, res);
@@ -131,18 +133,19 @@ export default class Renderer {
             });
 
 
-            stats.end();
 
-            if (ctxt.tick % 30 === 0) this.debug.update();
+            if (this.debug.visible && ctxt.tick % 30 === 0) this.debug.update();
         }
 
         if(SceneManager.isDebug) {
             const _func = func;
             let start;
             func = (ctxt : DefaultContext) => {
+                stats.begin();
                 start = performance.now()
                 _func(ctxt);
                 this.frameTime = performance.now() - start;
+                stats.end();
             }
         }
 

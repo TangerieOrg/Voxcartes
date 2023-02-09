@@ -23,7 +23,6 @@ export const ChunkUniforms : MaybeDynamicUniforms<{}, DefaultContext, Chunk> = {
 
 export default class Chunk extends ObjectTransform {
     data : ChunkData;
-    lods : ChunkData[];
     texture : Texture3D;
     numFilled : number;
     resolution : number;
@@ -51,14 +50,6 @@ export default class Chunk extends ObjectTransform {
         });
 
         this.setPosition(position);
-
-        this.lods = [];
-        let r = this.resolution;
-        for(let i = 1; i < NUM_LODS + 1; i++) {
-            r = r / 2;
-            this.lods[i - 1] = new Uint8Array(r * r * r * NUM_CHANNELS);
-        } 
-
         this.index = this.position.join(",");
 
         this.lod = 0;
@@ -77,57 +68,28 @@ export default class Chunk extends ObjectTransform {
         this.dirty = true;
     }
 
-    setFromFunction(func : VoxelSampleFunction) {
-        this.numFilled = 0;
-        let index = this.data.length - NUM_CHANNELS;
-        
-        const offsetPosition = vec3.scale(
-            vec3.create(),
-            this.position,
-            this.resolution
-        );
-
-        const currentPos = vec3.create();
-        const context : GenerationContext = {
-            resolution: this.resolution
-        }
-        let data: vec4;
-        for (let z = 0; z < this.resolution; z++) {
-            for (let y = 0; y < this.resolution; y++) {
-                for (let x = 0; x < this.resolution; x++) {
-                    vec3.add(currentPos, [x, y, z], offsetPosition);
-                    data = func(currentPos, context);
-                    this.data.set(data, index);
-                    index -= NUM_CHANNELS;
-                    if (data[3] > 0) this.numFilled++;
-                }
-            }
-        }
-
-        this.dirty = true;
-    }
 
     async setFromWorker(pool : WorkerPool<ChunkWorkerCommandMap>) {
-        const [[data, ...lods], numFilled] = await pool.execute("generate", this.resolution, this.position, this.lods.length);
-        this.data.set(data, 0);
-        
+        const [data, numFilled] = await pool.execute("generate", [this.resolution, this.position, this.data.buffer], [this.data.buffer]);
+        // this.data.set(data, 0);
+        this.data = new Uint8Array(data);
         if(this.numFilled === 0 && numFilled === 0) return;
         
         this.numFilled = numFilled;
-
-        for(let i = 0; i < lods.length; i++) {
-            this.lods[i].set(lods[i]);
-        }
 
         this.dirty = true;
     }
 
     update() {
-        this.texture.subimage(this.data, 0, 0, 0, 0);
-
-        for(let i = 0; i < this.lods.length; i++) {
-            this.texture.subimage(this.lods[i], 0, 0, 0, i + 1);
-        }
+        this.texture({
+            width: this.resolution,
+            height: this.resolution,
+            depth: this.resolution,
+            format: "rgba",
+            data: this.data,
+            mipmap: true,
+            type: "uint8"
+        });
         this.dirty = false;
     }
 

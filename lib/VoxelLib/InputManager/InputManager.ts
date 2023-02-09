@@ -48,6 +48,12 @@ class _InputManager {
         });
     }
 
+    onKeyDown(key : string, func : () => void) {
+        return this.emitter.on("keydown", (ev) => {
+            if(ev === key) func();
+        })
+    }
+
     isKeyDown(key : string) { return this.activeKeys.has(key.toLowerCase()) };
 }
 

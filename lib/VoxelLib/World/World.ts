@@ -12,7 +12,6 @@ import Scene from "@VoxelLib/Scene";
 import { throttle } from "lodash";
 import Chunk, { ChunkUniforms, ChunkIndex } from "./Chunk";
 import WorkerPool from "@VoxelLib/Workers/WorkerPool";
-import { ExampleWorkerCommandMap } from "@VoxelLib/Workers/ExampleWorkerTypes";
 import { ChunkWorkerCommandMap } from "./ChunkWorkerTypes";
 
 const cubeDef = createCubeDefinition(0.5);
@@ -149,7 +148,7 @@ export default class World<RContext extends REGL.DefaultContext & AsContext<Came
         // console.log("Updating Batches");
         const camera = this.scene.camera;
 
-        const batchOffsets = [5, 8, 12];
+        const batchOffsets = [5, 10, 30];
 
         this.batchViewDistances = Array(batchOffsets.length).fill(0).map(() => []);
         const camPos = vec3.scale(cPos, camera.getPosition(), 1 / camera.getScale()[0]);

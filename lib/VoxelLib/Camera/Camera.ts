@@ -28,7 +28,7 @@ export default interface Camera extends SceneMemberContext, ObjectTransform {}
 export default class Camera extends ObjectTransform {
     fov : number = 75;
     zNear : number = 0.0001;
-    zFar : number = 40;
+    zFar : number = 100;
 
     projectionMatrix : mat4 = mat4.create();
     viewMatrix : mat4 = mat4.create();
@@ -86,7 +86,7 @@ export default class Camera extends ObjectTransform {
 
     updateCameraMatrix() {
         // Create projection matrix
-        mat4.perspective(this.projectionMatrix, deg2rad(this.fov), this.getAspect(), this.zNear, this.zFar);
+        mat4.perspective(this.projectionMatrix, -deg2rad(this.fov), this.getAspect(), this.zNear, this.zFar);
         // Create view matrix (inverse of camera matrix) => offset everything by opposite of camera
         mat4.invert(this.viewMatrix, this.worldMatrix);
         mat4.scale(this.viewMatrix, this.viewMatrix, this.scale);
@@ -116,26 +116,26 @@ export default class Camera extends ObjectTransform {
         }
 
         if (InputManager.isKeyDown("a")) {
-            dir[0] = this.moveSpeed;
+            dir[0] = -this.moveSpeed;
             this.isDirty = true;
         } else if (InputManager.isKeyDown("d")) {
-            dir[0] = -this.moveSpeed;
+            dir[0] = this.moveSpeed;
             this.isDirty = true;
         }
 
         if (InputManager.isKeyDown(" ")) {
-            dir[1] = -this.moveSpeed;
+            dir[1] = this.moveSpeed;
             this.isDirty = true;
         } else if (InputManager.isKeyDown("Shift")) {
-            dir[1] = this.moveSpeed;
+            dir[1] = -this.moveSpeed;
             this.isDirty = true;
         }
 
         if (InputManager.isKeyDown("q")) {
-            quat.rotateY(this.rotation, this.rotation, this.turnSpeed);
+            quat.rotateY(this.rotation, this.rotation, -this.turnSpeed);
             this.isDirty = true;
         } else if (InputManager.isKeyDown("e")) {
-            quat.rotateY(this.rotation, this.rotation, -this.turnSpeed);
+            quat.rotateY(this.rotation, this.rotation, this.turnSpeed);
             this.isDirty = true;
         }
 

@@ -52,7 +52,7 @@ Raycast castRay(const vec3 origin, const vec3 dir) {
     tMaxZ = tDelta.z * ((dir.z>0.0) ? (1.0 - fr.z) : fr.z);
 
     vec3 norm = cubenormal(origin - float(size) * 0.5);
-    const int maxTrace = 89;
+    const int maxTrace = 200; //89;
 
     for (int i = 0; i < maxTrace; i++) {
         if(pos.x < 0.0 || pos.y < 0.0 || pos.z < 0.0 || pos.x > float(size) || pos.y > float(size) || pos.z > float(size)) {

@@ -25,7 +25,7 @@ export default class WorkerPool<TCmdMap extends CommandMap> {
         return this.lastJobID++;
     }
 
-    public async execute<K extends keyof TCmdMap>(cmd : K, ...payload : WorkerCommandArguments<TCmdMap, K>) {
+    public async execute<K extends keyof TCmdMap>(cmd : K, payload : WorkerCommandArguments<TCmdMap, K>, transferrable? : Transferable[]) {
         const id = this.getJobID();
 
         // Send Message
@@ -33,7 +33,7 @@ export default class WorkerPool<TCmdMap extends CommandMap> {
             jobId: id,
             cmd,
             payload
-        });
+        }, transferrable);
         
 
         // Wait for response
@@ -53,10 +53,10 @@ export default class WorkerPool<TCmdMap extends CommandMap> {
         });
     }
 
-    private sendCommandExec<K extends keyof TCmdMap>(req : WorkerRequest<TCmdMap, K>) {
+    private sendCommandExec<K extends keyof TCmdMap>(req : WorkerRequest<TCmdMap, K>, transferrable? : Transferable[]) {
         const workerId = this.getNextWorkerID();
         const worker = this.workers[workerId];
-        worker.postMessage(req);
+        transferrable ? worker.postMessage(req, transferrable) : worker.postMessage(req);
         return worker;
     }
 

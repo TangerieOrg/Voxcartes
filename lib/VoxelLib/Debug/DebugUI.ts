@@ -1,3 +1,5 @@
+import InputManager from "@VoxelLib/InputManager/InputManager";
+
 export type DebugUIValueType<T = any> = (() => T) | T;
 
 interface DebugMapValue<T = any> {
@@ -17,6 +19,19 @@ export default class DebugUI {
 
     private htmlEl = document.getElementById("debug") as HTMLDivElement;
 
+    // @ts-ignore
+    public visible : boolean = process.env.NODE_ENV === 'development';
+
+    constructor() {
+        this.htmlEl.hidden = !this.visible;
+
+        InputManager.onKeyDown("p", () => this.setVisible());
+    }
+
+    public setVisible(v = !this.visible) {
+        this.visible = v;
+        this.htmlEl.hidden = !v;
+    }
 
     private create(key: string) {
         const valueEl = document.createElement("p");

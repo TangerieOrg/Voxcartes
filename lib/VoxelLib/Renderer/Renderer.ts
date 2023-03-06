@@ -25,7 +25,7 @@ export interface RenderConfig {
 }
 
 const DefaultRenderConfig : RenderConfig = {
-    maxResolution: 1080
+    maxResolution: 1920
 }
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;
@@ -80,7 +80,12 @@ export default class Renderer {
                 sun: {
                     direction: () => lightPos,
                     albedo: [1, 1, 1],
-                    intensity: 1
+                    intensity: 0.8,
+                    specular: 0.4
+                },
+                ambient: {
+                    albedo: [1, 1, 1],
+                    intensity: 0.4
                 }
             })
         });

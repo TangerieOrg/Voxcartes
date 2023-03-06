@@ -8,9 +8,9 @@ import { GenerationContext, VoxelSampleFunction } from "./World";
 export function createChunkWorkerFromSample(func: VoxelSampleFunction) {
     const handler = new WorkerCommandHandler<ChunkWorkerCommandMap>();
 
-    handler.command("generate", (resolution, position, buffer) => {
+    handler.command("generate", (resolution, position, tex) => {
         let numFilled = 0;
-        const tex = new Uint8Array(buffer);
+        // const tex = new Uint8Array(buffer);
         // const tex = new Uint8Array(resolution * resolution * resolution * NUM_CHANNELS);
         let index = tex.length - NUM_CHANNELS;
 
@@ -37,6 +37,6 @@ export function createChunkWorkerFromSample(func: VoxelSampleFunction) {
             }
         }
         
-        return [buffer, numFilled];
+        return [tex.buffer, numFilled];
     });
 }

@@ -2,10 +2,12 @@ import { createChunkWorkerFromSample } from "@VoxelLib/World/ChunkWorkerUtil";
 import { VoxelSampleFunction } from "@VoxelLib/World/World";
 import { createNoise2D, createNoise3D } from "simplex-noise";
 
-const noise2d = createNoise2D();
-const NOISE_SCALE = 140;
+import Alea from "alea";
 
-const noise3d = createNoise3D();
+const prng = Alea(0);
+
+const noise2d = createNoise2D(prng);
+const NOISE_SCALE = 140;
 
 const sample: VoxelSampleFunction = ([x, y, z], context) => {
     const floorHeight = (noise2d(x / NOISE_SCALE, z / NOISE_SCALE) * 0.5 + 0.5) * context.resolution * 1.5 + context.resolution;

@@ -4,20 +4,22 @@ import SceneManager from "@VoxelLib/Scene/SceneManager";
 
 export default class GameScene extends Scene {
     onLoad(): void {
-        this.camera.setPosition([0, 0, -12]);
+        this.camera.setPosition([4, 4, -4]);
         // this.camera.rotate([0, Math.PI, 0]);
         this.camera.setScale([2, 2, 2]);
 
-        // this.renderer.setConfig({
-        //     maxResolution: -1
-        // })
+        if(SceneManager.isDebug) {
+            this.renderer.setConfig({
+                maxResolution: -1
+            })
+        }
 
-        this.world.addChunkWorker(
-            "sphere", 
-            // @ts-ignore
-            new URL("../Generation/SphereSample.ts", import.meta.url),
-            2
-        );
+        // this.world.addChunkWorker(
+        //     "sphere", 
+        //     // @ts-ignore
+        //     new URL("../Generation/SphereSample.ts", import.meta.url),
+        //     2
+        // );
 
         // this.world.addChunkWorker(
         //     "floor", 
@@ -26,18 +28,18 @@ export default class GameScene extends Scene {
         //     1
         // );
 
-        // this.world.addChunkWorker(
-        //     "mountain", 
-        //     // @ts-ignore
-        //     new URL("../Generation/MountainSample.ts", import.meta.url),
-        //     1
-        // );
+        this.world.addChunkWorker(
+            "mountain", 
+            // @ts-ignore
+            new URL("../Generation/MountainSample.ts", import.meta.url),
+            4
+        );
 
 
         // this.world.generateFromWorker([0, 0, 0], [4, 1, 1], "floor", 8);
-        // this.world.generateFromWorker([0, 1, 0], [32, 3, 32], "mountain", 64);
+        this.world.generateFromWorker([0, 1, 0], [8, 3, 8], "mountain", 64);
 
-        this.world.generateFromWorker([-4, -4, -4], [4, 4, 4], "sphere", 64);
+        // this.world.generateFromWorker([-4, -4, -4], [4, 4, 4], "sphere", 64);
 
         const cmds: [string, DrawCommand][] = [
             ["Chunk", this.world.cmd],
@@ -56,10 +58,10 @@ export default class GameScene extends Scene {
         this.renderer.postProcessing.addByName(
             "Lighting.Directional",
             "Effects.Fog",
+            // "Effects.Bloom",
+            "Tonemapping.ACES",
             "Effects.FXAA",
-            "Tonemapping.ACES"
         );
-
     }
 
     onFrame(ctxt: REGL.DefaultContext): void {

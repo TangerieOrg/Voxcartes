@@ -70,7 +70,7 @@ export default class Chunk extends ObjectTransform {
 
 
     async setFromWorker(pool : WorkerPool<ChunkWorkerCommandMap>) {
-        const [data, numFilled] = await pool.execute("generate", [this.resolution, this.position, this.data.buffer], [this.data.buffer]);
+        const [data, numFilled] = await pool.execute("generate", [this.resolution, this.position, this.data], [this.data.buffer]);
         // this.data.set(data, 0);
         this.data = new Uint8Array(data);
         if(this.numFilled === 0 && numFilled === 0) return;

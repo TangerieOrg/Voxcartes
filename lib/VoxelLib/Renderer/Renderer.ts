@@ -25,7 +25,7 @@ export interface RenderConfig {
 }
 
 const DefaultRenderConfig : RenderConfig = {
-    maxResolution: 1080
+    maxResolution: 1920
 }
 
 export type RenderContext = DefaultContext & AsContext<CameraContext>;

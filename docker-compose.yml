@@ -2,12 +2,16 @@ version: '3'
 
 services:
   web:
-    ports:
-      - 8082:3000
     image: ${REG_NAME}/${REPO}:latest
+    networks:
+      - nginx-proxy-overlay
     deploy:
       replicas: 1
+      labels:
+        xyz.tangerie.reverse_proxy.path: "/vox"
+        xyz.tangerie.reverse_proxy.port: "3000"
 
 networks:
-  app:
+  nginx-proxy-overlay:
+    external: true
     driver: overlay

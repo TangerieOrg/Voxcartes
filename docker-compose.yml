@@ -1,17 +1,22 @@
-version: '3'
+name: voxcartes
 
 services:
   web:
-    image: ${REG_NAME}/${REPO}:latest
+    build: .
+    image: voxcartes-web:latest
+    pull_policy: never
+    restart: unless-stopped
     networks:
-      - nginx-proxy-overlay
-    deploy:
-      replicas: 1
-      labels:
-        xyz.tangerie.reverse_proxy.path: "/vox"
-        xyz.tangerie.reverse_proxy.port: "3000"
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.voxcartes.rule=Path(`/vox`) || PathPrefix(`/vox/`)"
+      - "traefik.http.routers.voxcartes.entrypoints=web,websecure"
+      - "traefik.http.routers.voxcartes.middlewares=add-slash@file,stripprefix-voxcartes"
+      - "traefik.http.middlewares.stripprefix-voxcartes.stripprefix.prefixes=/vox"
+      - "traefik.http.services.voxcartes.loadbalancer.server.port=3000"
 
 networks:
-  nginx-proxy-overlay:
+  traefik-proxy:
     external: true
-    driver: overlay

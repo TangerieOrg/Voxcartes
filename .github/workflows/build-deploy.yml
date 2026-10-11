@@ -1,0 +1,14 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: TangerieOrg/Workflows/.github/workflows/compose-deploy.yml@main
+    with:
+      project: voxcartes
+      ref: main
+    secrets: inherit
